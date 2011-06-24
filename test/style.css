@@ -1,0 +1,25 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+div.parent {
+    width: 100%;
+    height: 100%;
+    background-color: #faebd7;
+}
+
+div.nw {
+    background-color: #6495ed;
+}
+
+div.ne {
+    background-color: orange;
+}
+
+div.se {
+    background-color: #7fffd4;
+}
+
+div.sw {
+    background-color: #adff2f;
+}
