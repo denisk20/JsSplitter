@@ -12,18 +12,19 @@
     };
 
     window.JsSplitter = {
-        splitterWidth : 3,
+        splitterWidth : 8,
         vSplitterColor : "#000000",
         hSplitterColor : "#000000"
         
 
     };
     JsSplitter.splitArea = function(/**Div*/ base, vShift, hShift, one, two, three, four) {
-
+        this.base = base;
+        this.vShift = vShift;
+        this.hShift = hShift;
         for(var i = 3; i < arguments.length; i++) {
             var tile = arguments[i];
 
-            //todo
             if (tile && tile.parentNode && tile.parentNode.children) {
                 tile.parentNode.removeChild(tile);
             }
@@ -35,54 +36,67 @@
             one.style.position = "absolute";
             one.style.left = "0";
             one.style.top = "0";
-            one.style.width = (vShift - 0.5) + "%";
-            one.style.height = (hShift - 0.5) + "%";
             base.appendChild(one);
-            
             var vSplitter = document.createElement("div");
+
             vSplitter.style.position = "absolute";
             vSplitter.style.top = "0";
-            //todo
-            vSplitter.style.left = (vShift - 0.5) + "%";
             vSplitter.style.height = "100%";
-            //todo
-            vSplitter.style.width = "1%";
+            vSplitter.style.width = this.splitterWidth + "px";
             vSplitter.style.backgroundColor = this.vSplitterColor;
             base.appendChild(vSplitter);
-            
             two.style.position = "absolute";
+
             two.style.right = "0";
             two.style.top = "0";
-            two.style.width = (100 - vShift - 0.5) + "%";
-            two.style.height = (hShift - 0.5) + "%";
             base.appendChild(two);
-
             var hSplitter = document.createElement("div");
+
             hSplitter.style.position = "absolute";
             hSplitter.style.left = "0";
-            hSplitter.style.top = (hShift - 0.5) + "%";
             hSplitter.style.width = "100%";
-            hSplitter.style.height = "1%";
+            hSplitter.style.height = this.splitterWidth + "px";
             hSplitter.style.backgroundColor = this.hSplitterColor;
             base.appendChild(hSplitter);
-
             four.style.position = "absolute";
+
             four.style.left = "0";
             four.style.bottom = "0";
-            four.style.width = (vShift - 0.5) + "%";
-            four.style.height = (100 - hShift - 0.5) + "%";
             base.appendChild(four);
-            
 
             three.style.position = "absolute";
+
+
             three.style.right = "0";
             three.style.bottom = "0";
-            three.style.width = (100 - vShift - 0.5) + "%";
-            three.style.height = (100 - hShift - 0.5) + "%";
             base.appendChild(three);
+
+            this.one = one;
+            this.two = two;
+            this.three = three;
+            this.four = four;
+            this.vSplitter = vSplitter;
+            this.hSplitter = hSplitter;
+
+            this.resize();
         }
     };
+    JsSplitter.resize = function() {
+        var baseWidth = this.base.clientWidth;
+        var baseHeight = this.base.clientHeight;
 
+        this.one.style.width = (baseWidth * this.vShift - this.splitterWidth/2) + "px";
+        this.one.style.height = (baseHeight * this.hShift - this.splitterWidth/2) + "px";
+        this.vSplitter.style.left = (baseWidth * this.vShift - this.splitterWidth/2) + "px";
+        this.two.style.width = (baseWidth * (1 - this.vShift)- this.splitterWidth/2) + "px";
+        this.two.style.height = (baseHeight * this.hShift - this.splitterWidth/2) + "px";
+        this.hSplitter.style.top = (baseHeight * this.hShift - this.splitterWidth/2) + "px";
+        this.four.style.width = (baseWidth * this.vShift - this.splitterWidth/2) + "px";
+        this.four.style.height = (baseHeight * (1 - this.hShift) - this.splitterWidth/2) + "px";
+        this.three.style.width = (baseWidth * (1 - this.vShift) - this.splitterWidth/2) + "px";
+        this.three.style.height = (baseHeight * (1 - this.hShift) - this.splitterWidth/2) + "px";
+
+    };
 })();
 
 

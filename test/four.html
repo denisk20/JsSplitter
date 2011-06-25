@@ -7,9 +7,14 @@
     <script type="text/javascript" src="../src/JsSplitter.js"></script>
     <script type="text/javascript">
 //    <![CDATA[
+
+        window.onresize = function(){
+            JsSplitter.resize();
+        };
+
         function split() {
-            JsSplitter.splitArea(_("parent"), 10, 40, _("nw"), _("ne"), _("se"), _("sw"));
-        }
+            JsSplitter.splitArea(_("parent"), 0.1, 0.4, _("nw"), _("ne"), _("se"), _("sw"));
+        };
 //    ]]>
     </script>
 </head>
