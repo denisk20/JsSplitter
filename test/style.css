@@ -12,6 +12,12 @@ div.parent {
     background-color: #faebd7;
 }
 
+div.i_parent {
+    width: 100%;
+    height: 100%;
+    background-color: #8b0000;
+}
+
 div.nw {
     background-color: #6495ed;
 }
@@ -25,5 +31,21 @@ div.se {
 }
 
 div.sw {
+    background-color: #adff2f;
+}
+
+div.i_nw {
+    background-color: #6495ed;
+}
+
+div.i_ne {
+    background-color: orange;
+}
+
+div.i_se {
+    background-color: #7fffd4;
+}
+
+div.i_sw {
     background-color: #adff2f;
 }
