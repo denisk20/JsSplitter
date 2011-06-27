@@ -96,11 +96,11 @@
             return;
         }
 
-        for(var i = 0; i < this.towardsElements.length; i++) {
+        for (var i = 0; i < this.towardsElements.length; i++) {
             var tElement = this.towardsElements[i];
             new StyleManipulator(this.cssElementPropertyName, tElement).set(newTowardsAmount + "px")
         }
-        for(var j = 0; j < this.oppositeElements.length; j++) {
+        for (var j = 0; j < this.oppositeElements.length; j++) {
             var oElement = this.oppositeElements[j];
             new StyleManipulator(this.cssElementPropertyName, oElement).set(newOppositeAmount + "px")
         }
@@ -123,21 +123,19 @@
                 this.getDelta = this.getHDelta;
                 this.cssElementPropertyName = "width";
                 this.cssSplitterPropertyName = "left";
-                this.towardsElements = [this.area.one, this.area.four];
-                this.oppositeElements = [this.area.three, this.area.two];
                 this.splitter = this.area.vSplitter;
                 this.saveState = this.saveStateAfterHDragging;
                 this.shiftTheSplitter = this.shiftVSplitter;
+                this.setHDraggableElements();
                 break;
             case JsSplitter.V:
                 this.getDelta = this.getVDelta;
                 this.cssElementPropertyName = "height";
                 this.cssSplitterPropertyName = "top";
-                this.towardsElements = [this.area.one, this.area.two];
-                this.oppositeElements = [this.area.three, this.area.four];
                 this.splitter = this.area.hSplitter;
                 this.saveState = this.saveStateAfterVDragging;
                 this.shiftTheSplitter = this.shiftHSplitter;
+                this.setVDraggableElements();
                 break;
         }
     };
@@ -183,6 +181,178 @@
 
         this.init();
     };
+
+    JsSplitter.SplittedArea.SplitterEventUtils = {
+        addHSplitterHandler: function(area, hSplitter) {
+            EventUtil.addHandler(hSplitter, "mousedown", function(event) {
+                event = EventUtil.getEvent(event);
+                area.dragger.currentY = event.clientY;
+                JsSplitter.enableVDrag();
+                JsSplitter.draggableArea = area;
+                //in firefox, we have to prevent default action (dragging) for elements
+                if (event.preventDefault) event.preventDefault();
+            });
+        },
+
+        addVSplitterHandler: function(area, vSplitter) {
+            EventUtil.addHandler(vSplitter, "mousedown", function(event) {
+                event = EventUtil.getEvent(event);
+                area.dragger.currentX = event.clientX;
+                JsSplitter.enableHDrag();
+                JsSplitter.draggableArea = area;
+                //in firefox, we have to prevent default action (dragging) for elements
+                if (event.preventDefault) event.preventDefault();
+            });
+        }
+    };
+    JsSplitter.SplittedArea.OrdinalSplitterBuilder = {
+        buildHSplitter: function(area) {
+            var hSplitter = document.createElement("div");
+            hSplitter.style.position = "absolute";
+            hSplitter.style.left = "0";
+            hSplitter.style.width = "100%";
+            hSplitter.style.height = JsSplitter.splitterWidth + "px";
+            hSplitter.style.backgroundColor = JsSplitter.hSplitterColor;
+            JsSplitter.SplittedArea.SplitterEventUtils.addHSplitterHandler(area, hSplitter);
+            return hSplitter;
+        },
+        buildVSplitter: function(area) {
+            var vSplitter = document.createElement("div");
+            vSplitter.style.position = "absolute";
+            vSplitter.style.top = "0";
+            vSplitter.style.height = "100%";
+            vSplitter.style.width = JsSplitter.splitterWidth + "px";
+            vSplitter.style.backgroundColor = JsSplitter.vSplitterColor;
+            JsSplitter.SplittedArea.SplitterEventUtils.addVSplitterHandler(area, vSplitter);
+            return vSplitter;
+        }
+    };
+    JsSplitter.SplittedArea.TowardedSplitterBuilder = {
+        buildHSplitter: function(area) {
+            var hSplitter = document.createElement("div");
+            hSplitter.style.position = "absolute";
+            hSplitter.style.left = "0";
+            hSplitter.style.width = (area.base.clientWidth * area.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+            hSplitter.style.height = JsSplitter.splitterWidth + "px";
+            hSplitter.style.backgroundColor = JsSplitter.hSplitterColor;
+            JsSplitter.SplittedArea.SplitterEventUtils.addHSplitterHandler(area, hSplitter);
+            return hSplitter;
+        },
+        buildVSplitter: function(area) {
+            var vSplitter = document.createElement("div");
+            vSplitter.style.position = "absolute";
+            vSplitter.style.top = "0";
+            vSplitter.style.height = (area.base.clientHeight * area.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+            vSplitter.style.width = JsSplitter.splitterWidth + "px";
+            vSplitter.style.backgroundColor = JsSplitter.vSplitterColor;
+            JsSplitter.SplittedArea.SplitterEventUtils.addVSplitterHandler(area, vSplitter);
+            return vSplitter;
+        }
+    };
+    JsSplitter.SplittedArea.OppositeSplitterBuilder = {
+        buildHSplitter: function(area) {
+            var hSplitter = document.createElement("div");
+            hSplitter.style.position = "absolute";
+            hSplitter.style.right = "0";
+            hSplitter.style.width = (area.base.clientWidth * (1 - area.vSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
+            hSplitter.style.height = JsSplitter.splitterWidth + "px";
+            hSplitter.style.backgroundColor = JsSplitter.hSplitterColor;
+            JsSplitter.SplittedArea.SplitterEventUtils.addHSplitterHandler(area, hSplitter);
+            return hSplitter;
+        },
+        buildVSplitter: function(area) {
+            var vSplitter = document.createElement("div");
+            vSplitter.style.position = "absolute";
+            vSplitter.style.bottom = "0";
+            vSplitter.style.height = (area.base.clientHeight * (1 - area.hSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
+            vSplitter.style.width = JsSplitter.splitterWidth + "px";
+            vSplitter.style.backgroundColor = JsSplitter.vSplitterColor;
+            JsSplitter.SplittedArea.SplitterEventUtils.addVSplitterHandler(area, vSplitter);
+            return vSplitter;
+        }
+    };
+    JsSplitter.SplittedArea.EmptySplitterBuilder = {
+        buildHSplitter: function() {
+        },
+        buildVSplitter: function() {
+        }
+    };
+
+    JsSplitter.SplittedArea.OrdinalSectorBuilder = {
+        buildOne: function(element) {
+            if (element) {
+                element.style.position = "absolute";
+                element.style.left = "0";
+                element.style.top = "0";
+            }
+        },
+
+        buildTwo: function(element) {
+            if (element) {
+                element.style.position = "absolute";
+                element.style.right = "0";
+                element.style.top = "0";
+            }
+        },
+
+        buildThree: function(element) {
+            if (element) {
+                element.style.position = "absolute";
+                element.style.right = "0";
+                element.style.bottom = "0";
+            }
+        },
+
+        buildFour: function(element) {
+            if (element) {
+                element.style.position = "absolute";
+                element.style.left = "0";
+                element.style.bottom = "0";
+            }
+        }
+    };
+    JsSplitter.SplittedArea.TallSectorBuilder = {
+        buildOne: function(element) {
+            if (element) {
+                JsSplitter.SplittedArea.OrdinalSectorBuilder.buildOne(element);
+                element.style.width = "100%";
+            }
+        },
+
+        buildTwo: function(element) {
+            if (element) {
+                JsSplitter.SplittedArea.OrdinalSectorBuilder.buildTwo(element);
+                element.style.height = "100%";
+            }
+        },
+
+        buildThree: function(element) {
+            if (element) {
+                JsSplitter.SplittedArea.OrdinalSectorBuilder.buildThree(element);
+                element.style.width = "100%";
+            }
+        },
+
+        buildFour: function(element) {
+            if (element) {
+                JsSplitter.SplittedArea.OrdinalSectorBuilder.buildFour(element);
+                element.style.height = "100%";
+            }
+        }
+    };
+    JsSplitter.SplittedArea.EmptySectorBuilder = {
+        buildOne: function() {
+        },
+
+        buildTwo: function() {
+        },
+
+        buildThree: function() {
+        },
+
+        buildFour: function() {
+        }
+    };
     JsSplitter.SplittedArea.prototype.init = function() {
         for (var i = 3; i < arguments.length; i++) {
             var tile = arguments[i];
@@ -191,80 +361,112 @@
                 tile.parentNode.removeChild(tile);
             }
         }
-
-        //    ___
-        //   |_|_|
-        //  |_|_|
+        var oneBuilder;
+        var twoBuilder;
+        var threeBuilder;
+        var fourBuilder;
+        var hSplitterBuilder;
+        var vSplitterBuilder;
         if (this.one && this.two && this.three && this.four) {
-            this.one.style.position = "absolute";
-            this.one.style.left = "0";
-            this.one.style.top = "0";
+            oneBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
+            twoBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
+            threeBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
+            fourBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
 
-            this.two.style.position = "absolute";
-            this.two.style.right = "0";
-            this.two.style.top = "0";
+            hSplitterBuilder = JsSplitter.SplittedArea.OrdinalSplitterBuilder;
+            vSplitterBuilder = JsSplitter.SplittedArea.OrdinalSplitterBuilder;
 
-            this.four.style.position = "absolute";
-            this.four.style.left = "0";
-            this.four.style.bottom = "0";
+            //todo these functions should be prototypes
+            this.dragger.setHDraggableElements = function() {
+                this.towardsElements = [this.area.one, this.area.four];
+                this.oppositeElements = [this.area.three, this.area.two];
+            };
+            this.dragger.setVDraggableElements = function() {
+                this.towardsElements = [this.area.one, this.area.two];
+                this.oppositeElements = [this.area.three, this.area.four];
+            };
 
-            this.three.style.position = "absolute";
-            this.three.style.right = "0";
-            this.three.style.bottom = "0";
+            this.drawOne = function() {
+                this.one.style.width = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+                this.one.style.height = (this.base.clientHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+            };
+            this.drawVSplitter = function() {
+                this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+            };
 
-            var vSplitter = document.createElement("div");
-            vSplitter.style.position = "absolute";
-            vSplitter.style.top = "0";
-            vSplitter.style.height = "100%";
-            vSplitter.style.width = JsSplitter.splitterWidth + "px";
-            vSplitter.style.backgroundColor = JsSplitter.vSplitterColor;
+        } else if (this.one && ! this.two && this.three && this.four) {
+            oneBuilder = JsSplitter.SplittedArea.TallSectorBuilder;
+            twoBuilder = JsSplitter.SplittedArea.EmptySectorBuilder;
+            threeBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
+            fourBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
 
-            var hSplitter = document.createElement("div");
-            hSplitter.style.position = "absolute";
-            hSplitter.style.left = "0";
-            hSplitter.style.width = "100%";
-            hSplitter.style.height = JsSplitter.splitterWidth + "px";
-            hSplitter.style.backgroundColor = JsSplitter.hSplitterColor;
+            hSplitterBuilder = JsSplitter.SplittedArea.OrdinalSplitterBuilder;
+            vSplitterBuilder = JsSplitter.SplittedArea.OppositeSplitterBuilder;
 
-            var that = this;
+            this.dragger.setHDraggableElements = function() {
+                this.towardsElements = [this.area.four];
+                this.oppositeElements = [this.area.three];
+            };
+            this.dragger.setVDraggableElements = function() {
+                this.towardsElements = [this.area.one];
+                this.oppositeElements = [this.area.three, this.area.four];
+            };
 
-            EventUtil.addHandler(hSplitter, "mousedown", function(event) {
-                event = EventUtil.getEvent(event);
-                that.dragger.currentY = event.clientY;
-                JsSplitter.enableVDrag();
-                JsSplitter.draggableArea = that;
-                //in firefox, we have to prevent default action (dragging) for elements
-                if (event.preventDefault) event.preventDefault();
-            });
-            EventUtil.addHandler(vSplitter, "mousedown", function(event) {
-                event = EventUtil.getEvent(event);
-                that.dragger.currentX = event.clientX;
-                JsSplitter.enableHDrag();
-                JsSplitter.draggableArea = that;
-                //in firefox, we have to prevent default action (dragging) for elements
-                if (event.preventDefault) event.preventDefault();
-            });
-            this.vSplitter = vSplitter;
-            this.hSplitter = hSplitter;
-
-            this.base.appendChild(this.one);
-            this.base.appendChild(vSplitter);
-            this.base.appendChild(this.two);
-            this.base.appendChild(hSplitter);
-            this.base.appendChild(this.four);
-            this.base.appendChild(this.three);
-
+            this.drawOne = function() {
+                this.one.style.width = "100%";
+                this.one.style.height = (this.base.clientHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+            };
+            this.drawVSplitter = function() {
+                this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+                this.vSplitter.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
+            };
         }
+        oneBuilder.buildOne(this.one);
+        twoBuilder.buildTwo(this.two);
+        threeBuilder.buildThree(this.three);
+        fourBuilder.buildFour(this.four);
+
+        var hSplitter = hSplitterBuilder.buildHSplitter(this);
+        var vSplitter = vSplitterBuilder.buildVSplitter(this);
+
+        this.vSplitter = vSplitter;
+        this.hSplitter = hSplitter;
+
+        if (this.one) {
+            this.base.appendChild(this.one);
+        }
+        if (this.two) {
+            this.base.appendChild(this.two);
+        }
+        if (this.three) {
+            this.base.appendChild(this.three);
+        }
+        if (this.four) {
+            this.base.appendChild(this.four);
+        }
+        if (vSplitter) {
+            this.base.appendChild(vSplitter);
+        }
+        if (hSplitter) {
+            this.base.appendChild(hSplitter);
+        }
+
     };
     JsSplitter.SplittedArea.prototype.draw = function() {
         var baseWidth = this.base.clientWidth;
 
         var baseHeight = this.base.clientHeight;
-        this.one.style.width = (baseWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
-        this.one.style.height = (baseHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
-        this.vSplitter.style.left = (baseWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
-        this.two.style.width = (baseWidth * (1 - this.vSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
-        this.two.style.height = (baseHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+
+        if (this.one) {
+            this.drawOne();
+        }
+        if (this.vSplitter) {
+            this.drawVSplitter();
+        }
+        if (this.two) {
+            this.two.style.width = (baseWidth * (1 - this.vSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
+            this.two.style.height = (baseHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+        }
         this.hSplitter.style.top = (baseHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
         this.four.style.width = (baseWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
         this.four.style.height = (baseHeight * (1 - this.hSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
@@ -309,7 +511,7 @@
     };
 
 
-   /**
+    /**
      * This method must be called once after all splitting areas, are initialized
      * and nested into each other
      */
