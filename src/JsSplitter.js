@@ -1,3 +1,6 @@
+/**
+ * @author denisk
+ */
 (function () {
     window._ = function(id) {
         var result = document.getElementById(id);
@@ -15,8 +18,8 @@
         splitterWidth : 8, //px
         vSplitterColor : "#000000",
         hSplitterColor : "#000000",
-        hLimit: 30, //px
-        vLimit: 50,  //px
+        hLimit: 10, //px
+        vLimit: 10,  //px
 
         disableVDrag: function () {
 //                    console.log("disabling drag")
@@ -46,7 +49,7 @@
             } else if (element.attachEvent) {
                 element.attachEvent("on" + type, handler);
             } else {
-                element["on" + type] = hanlder;
+                element["on" + type] = handler;
             }
         },
 
@@ -73,6 +76,98 @@
 
         }
     };
+    JsSplitter.Dragger = function(/**JsSplitter.SplittedArea*/ area) {
+        this.area = area;
+    };
+    JsSplitter.Dragger.prototype.drag = function(event, minLimit) {
+        var delta = this.getDelta(event);
+
+        var towardsAmountStr = new StyleManipulator(this.cssElementPropertyName, this.towardsElements[0]).get();
+        var towardsAmount = parseFloat(towardsAmountStr.substring(0, towardsAmountStr.length - 2));
+        var newTowardsAmount = towardsAmount - delta;
+        if (newTowardsAmount < minLimit) {
+            return;
+        }
+
+        var oppositeAmountStr = new StyleManipulator(this.cssElementPropertyName, this.oppositeElements[0]).get();
+        var oppositeAmount = parseFloat(oppositeAmountStr.substring(0, oppositeAmountStr.length - 2));
+        var newOppositeAmount = oppositeAmount + delta;
+        if (newOppositeAmount < minLimit) {
+            return;
+        }
+
+        for(var i = 0; i < this.towardsElements.length; i++) {
+            var tElement = this.towardsElements[i];
+            new StyleManipulator(this.cssElementPropertyName, tElement).set(newTowardsAmount + "px")
+        }
+        for(var j = 0; j < this.oppositeElements.length; j++) {
+            var oElement = this.oppositeElements[j];
+            new StyleManipulator(this.cssElementPropertyName, oElement).set(newOppositeAmount + "px")
+        }
+
+        var splitterStyleManipulator = new StyleManipulator(this.cssSplitterPropertyName, this.splitter);
+        var splitterPositionStr = splitterStyleManipulator.get();
+
+        var splitterPosition = parseFloat(splitterPositionStr.substring(0, splitterPositionStr.length - 2));
+        var newSplitterPosition = splitterPosition - delta;
+
+        splitterStyleManipulator.set(newSplitterPosition + "px");
+
+        this.saveState(event);
+        this.shiftTheSplitter(delta);
+    };
+
+    JsSplitter.Dragger.prototype.switchDragMode = function(mode) {
+        switch (mode) {
+            case JsSplitter.H:
+                this.getDelta = this.getHDelta;
+                this.cssElementPropertyName = "width";
+                this.cssSplitterPropertyName = "left";
+                this.towardsElements = [this.area.one, this.area.four];
+                this.oppositeElements = [this.area.three, this.area.two];
+                this.splitter = this.area.vSplitter;
+                this.saveState = this.saveStateAfterHDragging;
+                this.shiftTheSplitter = this.shiftVSplitter;
+                break;
+            case JsSplitter.V:
+                this.getDelta = this.getVDelta;
+                this.cssElementPropertyName = "height";
+                this.cssSplitterPropertyName = "top";
+                this.towardsElements = [this.area.one, this.area.two];
+                this.oppositeElements = [this.area.three, this.area.four];
+                this.splitter = this.area.hSplitter;
+                this.saveState = this.saveStateAfterVDragging;
+                this.shiftTheSplitter = this.shiftHSplitter;
+                break;
+        }
+    };
+
+    JsSplitter.Dragger.prototype.getVDelta = function(event) {
+        return this.currentY - event.clientY;
+    };
+
+    JsSplitter.Dragger.prototype.getHDelta = function(event) {
+        return this.currentX - event.clientX;
+    };
+    JsSplitter.Dragger.prototype.saveStateAfterHDragging = function(event) {
+        this.currentX = event.clientX
+    };
+
+    JsSplitter.Dragger.prototype.saveStateAfterVDragging = function(event) {
+        this.currentY = event.clientY
+    };
+
+    JsSplitter.Dragger.prototype.shiftHSplitter = function(delta) {
+        var newSplitterShift = this.area.hSplitterShift - (delta / this.area.base.clientHeight);
+        //todo should this belong to  JsSplitter.SplittedArea?
+        this.area.hSplitterShift = newSplitterShift;
+    };
+
+    JsSplitter.Dragger.prototype.shiftVSplitter = function(delta) {
+        var newSplitterShift = this.area.vSplitterShift - (delta / this.area.base.clientWidth);
+        //todo should this belong to  JsSplitter.SplittedArea?
+        this.area.vSplitterShift = newSplitterShift;
+    };
 
     JsSplitter.SplittedArea = function(/**Div*/ base, vSplitterShift, hSplitterShift, one, two, three, four) {
         this.base = base;
@@ -84,6 +179,7 @@
         this.hSplitterShift = hSplitterShift;
         this._children = [];
 
+        this.dragger = new JsSplitter.Dragger(this);
 
         this.init();
     };
@@ -134,7 +230,7 @@
 
             EventUtil.addHandler(hSplitter, "mousedown", function(event) {
                 event = EventUtil.getEvent(event);
-                that.currentY = event.clientY;
+                that.dragger.currentY = event.clientY;
                 JsSplitter.enableVDrag();
                 JsSplitter.draggableArea = that;
                 //in firefox, we have to prevent default action (dragging) for elements
@@ -142,7 +238,7 @@
             });
             EventUtil.addHandler(vSplitter, "mousedown", function(event) {
                 event = EventUtil.getEvent(event);
-                that.currentX = event.clientX;
+                that.dragger.currentX = event.clientX;
                 JsSplitter.enableHDrag();
                 JsSplitter.draggableArea = that;
                 //in firefox, we have to prevent default action (dragging) for elements
@@ -199,77 +295,21 @@
         this._children.push(childArea);
     };
 
-    JsSplitter.SplittedArea.prototype.verticalDragging = function(event, minVLimit) {
-        var delta = this.currentY - event.clientY;
+    function StyleManipulator(property, element) {
+        this.property = property;
+        this.element = element;
+    }
 
-        var upperHeightStr = this.one.style.height;
-        var upperElementsHeight = parseFloat(upperHeightStr.substring(0, upperHeightStr.length - 2));
-        var newUpperHeight = upperElementsHeight - delta;
-        if (newUpperHeight < minVLimit) {
-            return;
-        }
-
-        var bottomHeightStr = this.three.style.height;
-        var bottomElementsHeight = parseFloat(bottomHeightStr.substring(0, bottomHeightStr.length - 2));
-        var newBottomHeight = bottomElementsHeight + delta;
-        if (newBottomHeight < minVLimit) {
-            return;
-        }
-
-        this.one.style.height = newUpperHeight + "px";
-        this.two.style.height = newUpperHeight + "px";
-        this.three.style.height = newBottomHeight + "px";
-        this.four.style.height = newBottomHeight + "px";
-
-        var splitterPositionStr = this.hSplitter.style.top;
-        var splitterPosition = parseFloat(splitterPositionStr.substring(0, splitterPositionStr.length - 2));
-        var newSplitterPosition = splitterPosition - delta;
-
-        this.hSplitter.style.top = newSplitterPosition + "px";
-
-        this.currentY = event.clientY;
-
-        var newHSplitterShift = this.hSplitterShift - (delta / this.base.clientHeight);
-        this.hSplitterShift = newHSplitterShift;
-        this.draw();
+    StyleManipulator.prototype.set = function(value) {
+        this.element.style[this.property] = value;
     };
 
-    JsSplitter.SplittedArea.prototype.horizontalDragging = function(event, minHLimit) {
-        var delta = this.currentX - event.clientX;
-
-        var leftWidthStr = this.one.style.width;
-        var leftElementsWidth = parseFloat(leftWidthStr.substring(0, leftWidthStr.length - 2));
-        var newLeftWidth = leftElementsWidth - delta;
-        if (newLeftWidth < minHLimit) {
-            return;
-        }
-
-        var rightWidthStr = this.two.style.width;
-        var rightElementsWidth = parseFloat(rightWidthStr.substring(0, rightWidthStr.length - 2));
-        var newRightWidth = rightElementsWidth + delta;
-        if (newRightWidth < minHLimit) {
-            return;
-        }
-
-        this.one.style.width = newLeftWidth + "px";
-        this.two.style.width = newRightWidth + "px";
-        this.three.style.width = newRightWidth + "px";
-        this.four.style.width = newLeftWidth + "px";
-
-        var splitterPositionStr = this.vSplitter.style.left;
-        var splitterPosition = parseFloat(splitterPositionStr.substring(0, splitterPositionStr.length - 2));
-        var newSplitterPosition = splitterPosition - delta;
-
-        this.vSplitter.style.left = newSplitterPosition + "px";
-
-        this.currentX = event.clientX;
-
-        var newVSplitterShift = this.vSplitterShift - (delta / this.base.clientWidth);
-        this.vSplitterShift = newVSplitterShift;
-        this.draw();
+    StyleManipulator.prototype.get = function() {
+        return this.element.style[this.property];
     };
 
-    /**
+
+   /**
      * This method must be called once after all splitting areas, are initialized
      * and nested into each other
      */
@@ -277,14 +317,18 @@
         EventUtil.addHandler(this.base, "mousemove", function(event) {
             if (JsSplitter.VDRAG) {
                 event = EventUtil.getEvent(event);
-                JsSplitter.draggableArea.verticalDragging(event, JsSplitter.vLimit);
+                JsSplitter.draggableArea.dragger.switchDragMode(JsSplitter.V);
+                JsSplitter.draggableArea.dragger.drag(event, JsSplitter.vLimit);
+                JsSplitter.draggableArea.draw();
             }
             if (JsSplitter.HDRAG) {
                 event = EventUtil.getEvent(event);
-                JsSplitter.draggableArea.horizontalDragging(event, JsSplitter.hLimit);
+                JsSplitter.draggableArea.dragger.switchDragMode(JsSplitter.H);
+                JsSplitter.draggableArea.dragger.drag(event, JsSplitter.hLimit);
+                JsSplitter.draggableArea.draw();
             }
         });
-        EventUtil.addHandler(this.base, "mouseup", function(event) {
+        EventUtil.addHandler(this.base, "mouseup", function() {
             JsSplitter.disableVDrag();
             JsSplitter.disableHDrag();
         });
@@ -303,6 +347,9 @@
     JsSplitter.SplittedArea.NE = 2;
     JsSplitter.SplittedArea.SE = 3;
     JsSplitter.SplittedArea.SW = 4;
+
+    JsSplitter.H = 1;
+    JsSplitter.V = 2;
 })();
 
 
