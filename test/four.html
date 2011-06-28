@@ -23,7 +23,8 @@
             innerSplittedArea.addSubArea(JsSplitter.SplittedArea.NW, innerSplittedArea1);
             innerSplittedArea1.addSubArea(JsSplitter.SplittedArea.NW, innerSplittedArea2);
 
-            outerSplittedArea.build();
+            outerSplittedArea.attachBaseListeners();
+            outerSplittedArea.draw();
         }
         //    ]]>
     </script>
