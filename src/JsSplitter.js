@@ -190,8 +190,18 @@
         this.init();
     };
 
-    JsSplitter.SplittedArea.SplitterEventUtils = {
-        addHSplitterHandler: function(area, hSplitter) {
+    JsSplitter.SplittedArea.SplitterUtils = {
+        prepareHSplitter: function(area, hSplitter) {
+            this._addHHandler(area, hSplitter);
+            this._addHCanvas(hSplitter);
+        },
+
+        prepareVSplitter: function(area, vSplitter) {
+            this._addVHandler(area, vSplitter);
+            this._addVCanvas(vSplitter);
+        },
+
+        _addHHandler: function(area, hSplitter) {
             EventUtil.addHandler(hSplitter, "mousedown", function(event) {
                 event = EventUtil.getEvent(event);
                 area.dragger.currentY = event.clientY;
@@ -201,8 +211,7 @@
                 if (event.preventDefault) event.preventDefault();
             });
         },
-
-        addVSplitterHandler: function(area, vSplitter) {
+        _addVHandler: function(area, vSplitter) {
             EventUtil.addHandler(vSplitter, "mousedown", function(event) {
                 event = EventUtil.getEvent(event);
                 area.dragger.currentX = event.clientX;
@@ -211,6 +220,28 @@
                 //in firefox, we have to prevent default action (dragging) for elements
                 if (event.preventDefault) event.preventDefault();
             });
+        },
+        _addHCanvas: function(hSplitter) {
+            if (hSplitter) {
+                var canvas = document.createElement("canvas");
+                canvas.style.position = "absolute";
+                canvas.style.left = "10%";
+                canvas.style.width = "30px";
+                canvas.style.height = "100%";
+                canvas.style.backgroundColor = "green";
+                hSplitter.appendChild(canvas);
+            }
+        },
+        _addVCanvas: function(vSplitter) {
+            if (vSplitter) {
+                var canvas = document.createElement("canvas");
+                canvas.style.position = "absolute";
+                canvas.style.top = "10%";
+                canvas.style.width = "100%";
+                canvas.style.height = "30px";
+                canvas.style.backgroundColor = "green";
+                vSplitter.appendChild(canvas);
+            }
         }
     };
     JsSplitter.SplittedArea.OrdinalSplitterBuilder = {
@@ -221,7 +252,7 @@
             hSplitter.style.width = "100%";
             hSplitter.style.height = JsSplitter.splitterWidth + "px";
             hSplitter.style.backgroundColor = JsSplitter.hSplitterColor;
-            JsSplitter.SplittedArea.SplitterEventUtils.addHSplitterHandler(area, hSplitter);
+            JsSplitter.SplittedArea.SplitterUtils.prepareHSplitter(area, hSplitter);
             return hSplitter;
         },
         buildVSplitter: function(area) {
@@ -231,7 +262,7 @@
             vSplitter.style.height = "100%";
             vSplitter.style.width = JsSplitter.splitterWidth + "px";
             vSplitter.style.backgroundColor = JsSplitter.vSplitterColor;
-            JsSplitter.SplittedArea.SplitterEventUtils.addVSplitterHandler(area, vSplitter);
+            JsSplitter.SplittedArea.SplitterUtils.prepareVSplitter(area, vSplitter);
             return vSplitter;
         }
     };
@@ -242,7 +273,7 @@
             hSplitter.style.left = "0";
             hSplitter.style.height = JsSplitter.splitterWidth + "px";
             hSplitter.style.backgroundColor = JsSplitter.hSplitterColor;
-            JsSplitter.SplittedArea.SplitterEventUtils.addHSplitterHandler(area, hSplitter);
+            JsSplitter.SplittedArea.SplitterUtils.prepareHSplitter(area, hSplitter);
             return hSplitter;
         },
         buildVSplitter: function(area) {
@@ -251,7 +282,7 @@
             vSplitter.style.top = "0";
             vSplitter.style.width = JsSplitter.splitterWidth + "px";
             vSplitter.style.backgroundColor = JsSplitter.vSplitterColor;
-            JsSplitter.SplittedArea.SplitterEventUtils.addVSplitterHandler(area, vSplitter);
+            JsSplitter.SplittedArea.SplitterUtils.prepareVSplitter(area, vSplitter);
             return vSplitter;
         }
     };
@@ -262,7 +293,7 @@
             hSplitter.style.right = "0";
             hSplitter.style.height = JsSplitter.splitterWidth + "px";
             hSplitter.style.backgroundColor = JsSplitter.hSplitterColor;
-            JsSplitter.SplittedArea.SplitterEventUtils.addHSplitterHandler(area, hSplitter);
+            JsSplitter.SplittedArea.SplitterUtils.prepareHSplitter(area, hSplitter);
             return hSplitter;
         },
         buildVSplitter: function(area) {
@@ -271,7 +302,7 @@
             vSplitter.style.bottom = "0";
             vSplitter.style.width = JsSplitter.splitterWidth + "px";
             vSplitter.style.backgroundColor = JsSplitter.vSplitterColor;
-            JsSplitter.SplittedArea.SplitterEventUtils.addVSplitterHandler(area, vSplitter);
+            JsSplitter.SplittedArea.SplitterUtils.prepareVSplitter(area, vSplitter);
             return vSplitter;
         }
     };
@@ -391,20 +422,20 @@
                 this.two.style.width = (this.base.clientWidth * (1 - this.vSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
                 this.two.style.height = (this.base.clientHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
             };
-            this.drawFour = function(){
-                this.four.style.width = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
-                this.four.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
-            };
             this.drawThree = function() {
                 this.three.style.width = (this.base.clientWidth * (1 - this.vSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
                 this.three.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
             };
-
-            this.drawVSplitter = function() {
-                this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+            this.drawFour = function() {
+                this.four.style.width = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+                this.four.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
             };
-            this.drawHSplitter = function() {
+
+            this.drawHSplitterItself = function() {
                 this.hSplitter.style.top = (this.base.clientHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+            };
+            this.drawVSplitterItself = function() {
+                this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
             };
 
         } else if (this.one && ! this.two && this.three && this.four) {
@@ -430,22 +461,23 @@
                 this.one.style.height = (this.base.clientHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
             };
             this.drawTwo = function() {
-            };
-            this.drawFour = function(){
-                this.four.style.width = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
-                this.four.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
+                //do nothing
             };
             this.drawThree = function() {
                 this.three.style.width = (this.base.clientWidth * (1 - this.vSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
                 this.three.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
             };
+            this.drawFour = function() {
+                this.four.style.width = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+                this.four.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
+            };
 
-            this.drawVSplitter = function() {
+            this.drawHSplitterItself = function() {
+                this.hSplitter.style.top = (this.base.clientHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+            };
+            this.drawVSplitterItself = function() {
                 this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
                 this.vSplitter.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - JsSplitter.splitterWidth / 2) + "px";
-            };
-            this.drawHSplitter = function() {
-                this.hSplitter.style.top = (this.base.clientHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
             };
         }
         oneBuilder.buildOne(this.one);
@@ -471,24 +503,26 @@
         if (this.four) {
             this.base.appendChild(this.four);
         }
-        if (vSplitter) {
-            this.base.appendChild(vSplitter);
-        }
-        if (hSplitter) {
-            this.base.appendChild(hSplitter);
-        }
 
     };
+    JsSplitter.SplittedArea.prototype.drawHSplitter = function() {
+        this.drawHSplitterItself();
+    };
+    JsSplitter.SplittedArea.prototype.drawVSplitter = function() {
+        this.drawVSplitterItself();
+    };
+
     JsSplitter.SplittedArea.prototype.draw = function() {
         this.drawOne();
         this.drawTwo();
         this.drawThree();
         this.drawFour();
-        this.drawVSplitter();
-        this.drawHSplitter();
+
         for (var i = 0; i < this._children.length; i++) {
             this._children[i].draw();
         }
+        this.drawHSplitter();
+        this.drawVSplitter();
     };
     JsSplitter.SplittedArea.prototype.addSubArea = function(sector, /**JsSplitter.SplittedArea*/ childArea) {
         var parent;
@@ -555,6 +589,35 @@
                 JsSplitter.disableHDrag();
             }
         });
+    };
+    JsSplitter.SplittedArea.prototype.addSplitters = function() {
+        if (this.vSplitter) {
+            this.base.appendChild(this.vSplitter);
+        }
+        if (this.hSplitter) {
+            this.base.appendChild(this.hSplitter);
+        }
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].addSplitters();
+        }
+    };
+
+    JsSplitter.SplittedArea.prototype.removeSplitters = function() {
+        if (this.vSplitter) {
+            this.base.removeChild(this.vSplitter);
+        }
+        if (this.hSplitter) {
+            this.base.removeChild(this.hSplitter);
+        }
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].removeSplitters();
+        }
+    };
+
+    JsSplitter.SplittedArea.prototype.build = function() {
+        this.attachBaseListeners();
+        this.draw();
+        this.addSplitters();
     };
 
     JsSplitter.SplittedArea.NW = 1;
