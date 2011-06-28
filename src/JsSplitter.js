@@ -223,24 +223,62 @@
         },
         _addHCanvas: function(hSplitter) {
             if (hSplitter) {
-                var canvas = document.createElement("canvas");
-                canvas.style.position = "absolute";
-                canvas.style.left = "10%";
-                canvas.style.width = "30px";
-                canvas.style.height = "100%";
-                canvas.style.backgroundColor = "green";
-                hSplitter.appendChild(canvas);
+                var buttons = document.createElement("div");
+                buttons.style.position = "absolute";
+                buttons.style.left = "10%";
+                buttons.style.width = "30px";
+                buttons.style.height = "100%";
+
+                var towardsButton = document.createElement("canvas");
+                var oppositeButton = document.createElement("canvas");
+
+                towardsButton.style.width = "50%";
+                towardsButton.style.height = "100%";
+                towardsButton.style.position = "absolute";
+                towardsButton.style.left = 0;
+                towardsButton.style.backgroundColor = "red";
+                oppositeButton.style.width = "50%";
+                oppositeButton.style.height = "100%";
+                oppositeButton.style.position = "absolute";
+                oppositeButton.style.right = 0;
+                //todo from properties
+                oppositeButton.style.backgroundColor = "orange";
+
+                var towardsContext = towardsButton.getContext("2d");
+//                towardsContext.lineTo()
+
+                buttons.appendChild(towardsButton);
+                buttons.appendChild(oppositeButton);
+                hSplitter.appendChild(buttons);
             }
         },
         _addVCanvas: function(vSplitter) {
             if (vSplitter) {
-                var canvas = document.createElement("canvas");
-                canvas.style.position = "absolute";
-                canvas.style.top = "10%";
-                canvas.style.width = "100%";
-                canvas.style.height = "30px";
-                canvas.style.backgroundColor = "green";
-                vSplitter.appendChild(canvas);
+                var buttons = document.createElement("div");
+                buttons.style.position = "absolute";
+                buttons.style.top = "10%";
+                buttons.style.width = "100%";
+                buttons.style.height = "30px";
+
+                var towardsButton = document.createElement("canvas");
+                var oppositeButton = document.createElement("canvas");
+
+                towardsButton.style.width = "100%";
+                towardsButton.style.height = "50%";
+                towardsButton.style.position = "absolute";
+                towardsButton.style.top = 0;
+                towardsButton.style.backgroundColor = "red";
+                oppositeButton.style.width = "100%";
+                oppositeButton.style.height = "50%";
+                oppositeButton.style.position = "absolute";
+                oppositeButton.style.bottom = 0;
+                //todo from properties
+                oppositeButton.style.backgroundColor = "orange";
+
+                buttons.appendChild(towardsButton);
+                buttons.appendChild(oppositeButton);
+
+                vSplitter.appendChild(buttons);
             }
         }
     };
@@ -614,10 +652,22 @@
         }
     };
 
+    JsSplitter.SplittedArea.prototype.paintArrows = function() {
+        //todo
+    };
+    JsSplitter.SplittedArea.prototype.paint = function() {
+        this.paintArrows();
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].paintArrows();
+        }
+    };
+
     JsSplitter.SplittedArea.prototype.build = function() {
         this.attachBaseListeners();
         this.draw();
         this.addSplitters();
+        //by that time all shapes are ready. We can rely on clientWidth and clientHeight to do some canvas paintings
+        this.paint();
     };
 
     JsSplitter.SplittedArea.NW = 1;
