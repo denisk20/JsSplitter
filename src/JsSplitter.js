@@ -194,13 +194,13 @@
         prepareHSplitter: function(area, hSplitter) {
             hSplitter.style.cursor = "n-resize";
             this._addHHandler(area, hSplitter);
-//            this._addHCanvas(hSplitter);
+            this._addHCanvas(hSplitter);
         },
 
         prepareVSplitter: function(area, vSplitter) {
-            this._addVHandler(area, vSplitter);
             vSplitter.style.cursor = "w-resize";
-//            this._addVCanvas(vSplitter);
+            this._addVHandler(area, vSplitter);
+            this._addVCanvas(vSplitter);
         },
 
         _addHHandler: function(area, hSplitter) {
@@ -514,6 +514,7 @@
 
             this.drawHSplitterItself = function() {
                 this.hSplitter.style.top = (this.base.clientHeight * this.hSplitterShift - JsSplitter.splitterWidth / 2) + "px";
+                this.hSplitter.style.width = "100%";
             };
             this.drawVSplitterItself = function() {
                 this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - JsSplitter.splitterWidth / 2) + "px";
@@ -562,7 +563,6 @@
 
         var hSplitter = hSplitterBuilder.buildHSplitter(this);
         var vSplitter = vSplitterBuilder.buildVSplitter(this);
-
         this.hSplitter = hSplitter;
         this.vSplitter = vSplitter;
 
@@ -578,6 +578,12 @@
         if (this.four) {
             this.base.appendChild(this.four);
         }
+        if(this.vSplitter) {
+            this.base.appendChild(vSplitter);
+        }
+        if(this.hSplitter) {
+            this.base.appendChild(hSplitter);
+        }
 
     };
     JsSplitter.SplittedArea.prototype.drawHSplitter = function() {
@@ -588,16 +594,8 @@
     };
 
     JsSplitter.SplittedArea.prototype.draw = function() {
-        this.drawOne();
-        this.drawTwo();
-        this.drawThree();
-        this.drawFour();
-
-        for (var i = 0; i < this._children.length; i++) {
-            this._children[i].draw();
-        }
-        this.drawHSplitter();
-        this.drawVSplitter();
+        this.drawSections();
+        this.drawSplitters();
     };
     JsSplitter.SplittedArea.prototype.addSubArea = function(sector, /**JsSplitter.SplittedArea*/ childArea) {
         var parent;
@@ -669,29 +667,29 @@
             }
         });
     };
-    JsSplitter.SplittedArea.prototype.addSplitters = function() {
-        if (this.vSplitter) {
-            this.base.appendChild(this.vSplitter);
-        }
-        if (this.hSplitter) {
-            this.base.appendChild(this.hSplitter);
-        }
-        for(var i = 0; i < this._children.length; i++) {
-            this._children[i].addSplitters();
-        }
-    };
-
-    JsSplitter.SplittedArea.prototype.removeSplitters = function() {
-        if (this.vSplitter) {
-            this.base.removeChild(this.vSplitter);
-        }
-        if (this.hSplitter) {
-            this.base.removeChild(this.hSplitter);
-        }
-        for(var i = 0; i < this._children.length; i++) {
-            this._children[i].removeSplitters();
-        }
-    };
+//    JsSplitter.SplittedArea.prototype.addSplitters = function() {
+//        if (this.vSplitter) {
+//            this.base.appendChild(this.vSplitter);
+//        }
+//        if (this.hSplitter) {
+//            this.base.appendChild(this.hSplitter);
+//        }
+//        for(var i = 0; i < this._children.length; i++) {
+//            this._children[i].addSplitters();
+//        }
+//    };
+//
+//    JsSplitter.SplittedArea.prototype.removeSplitters = function() {
+//        if (this.vSplitter) {
+//            this.base.removeChild(this.vSplitter);
+//        }
+//        if (this.hSplitter) {
+//            this.base.removeChild(this.hSplitter);
+//        }
+//        for(var i = 0; i < this._children.length; i++) {
+//            this._children[i].removeSplitters();
+//        }
+//    };
 
     JsSplitter.SplittedArea.prototype.paintArrows = function() {
         //todo
@@ -702,11 +700,29 @@
             this._children[i].paintArrows();
         }
     };
+    JsSplitter.SplittedArea.prototype.drawSections = function(){
+        this.drawOne();
+        this.drawTwo();
+        this.drawThree();
+        this.drawFour();
+
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].drawSections();
+        }
+    };
+    JsSplitter.SplittedArea.prototype.drawSplitters = function(){
+        this.drawHSplitter();
+        this.drawVSplitter();
+
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].drawSplitters();
+        }
+    };
 
     JsSplitter.SplittedArea.prototype.build = function() {
         this.attachBaseListeners();
         this.draw();
-        this.addSplitters();
+        this.draw();
         //by that time all shapes are ready. We can rely on clientWidth and clientHeight to do some canvas paintings
         this.paint();
     };
