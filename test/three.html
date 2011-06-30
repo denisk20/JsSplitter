@@ -15,13 +15,29 @@
         };
 
         function split() {
-            outerSplittedArea = new JsSplitter.SplittedArea(_("parent"), 0.1, 0.7, _("nw"), null, _("se"), _("sw"));
-            var innerSplittedArea = new JsSplitter.SplittedArea(_("i_parent"), 0.7, 0.6, _("i_nw"), _("i_ne"), _("i_se"), _("i_sw"));
-            var innerSplittedArea1 = new JsSplitter.SplittedArea(_("i_i_parent"), 0.2, 0.3, _("i_i_nw"), null, _("i_i_se"), _("i_i_sw"));
-            var innerSplittedArea2 = new JsSplitter.SplittedArea(_("i_i_i_parent"), 0.6, 0.4, _("i_i_i_nw"), _("i_i_i_ne"), _("i_i_i_se"), _("i_i_i_sw"));
-//
+            var outerOptions = {
+                w: 0.1,
+                h: 0.7
+            };
+            outerSplittedArea = new JsSplitter.SplittedArea(outerOptions,_("parent"), _("nw"), null, _("se"), _("sw"));
+            var innerOptions = {
+                w:0.7,
+                h:0.6
+            };
+            var innerSplittedArea = new JsSplitter.SplittedArea(innerOptions, _("i_parent"), _("i_nw"), null, _("i_se"), _("i_sw"));
+            var innerOptions1 = {
+                w:0.2,
+                h:0.3
+            };
+            var innerSplittedArea1 = new JsSplitter.SplittedArea(innerOptions1, _("i_i_parent"), _("i_i_nw"), null, _("i_i_se"), _("i_i_sw"));
+            var innerOptions2 = {
+                w: 0.6,
+                h:0.4
+            };
+            var innerSplittedArea2 = new JsSplitter.SplittedArea(innerOptions2, _("i_i_i_parent"), _("i_i_i_nw"), null, _("i_i_i_se"), _("i_i_i_sw"));
+
             outerSplittedArea.addSubArea(JsSplitter.SplittedArea.NW, innerSplittedArea);
-            innerSplittedArea.addSubArea(JsSplitter.SplittedArea.NE, innerSplittedArea1);
+            innerSplittedArea.addSubArea(JsSplitter.SplittedArea.SW, innerSplittedArea1);
             innerSplittedArea1.addSubArea(JsSplitter.SplittedArea.NW, innerSplittedArea2);
 
             outerSplittedArea.build();
