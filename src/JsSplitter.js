@@ -537,6 +537,49 @@
                 this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
                 this.vSplitter.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - this.splitterWidth / 2) + "px";
             };
+        } else if (this.one && this.two && ! this.three && this.four) {
+            oneBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
+            twoBuilder = JsSplitter.SplittedArea.TallSectorBuilder;
+            threeBuilder = JsSplitter.SplittedArea.EmptySectorBuilder;
+            fourBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
+
+            hSplitterBuilder = JsSplitter.SplittedArea.TowardedSplitterBuilder;
+            vSplitterBuilder = JsSplitter.SplittedArea.OrdinalSplitterBuilder;
+
+            this.dragger.setHDraggableElements = function() {
+                this.towardsElements = [this.area.one, this.area.four];
+                this.oppositeElements = [this.area.two];
+            };
+            this.dragger.setVDraggableElements = function() {
+                this.towardsElements = [this.area.one];
+                this.oppositeElements = [this.area.four];
+            };
+
+            //todo!!! - these functions should be moved into a builder
+            this.drawOne = function() {
+                this.one.style.width = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
+                this.one.style.height = (this.base.clientHeight * this.hSplitterShift - this.splitterWidth / 2) + "px";
+            };
+            this.drawTwo = function() {
+                this.two.style.width = (this.base.clientWidth * (1 - this.vSplitterShift) - this.splitterWidth / 2) + "px";
+                this.two.style.height = "100%";
+            };
+            this.drawThree = function() {
+                //do nothing
+            };
+            this.drawFour = function() {
+                this.four.style.width = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
+                this.four.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - this.splitterWidth / 2) + "px";
+            };
+
+            this.drawHSplitterItself = function() {
+                this.hSplitter.style.top = (this.base.clientHeight * this.hSplitterShift - this.splitterWidth / 2) + "px";
+                this.hSplitter.style.width = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
+            };
+            this.drawVSplitterItself = function() {
+                this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
+                this.vSplitter.style.height = "100%";
+            };
         } else if(this.one && this.two && ! this.three && !this.four) {
             oneBuilder = JsSplitter.SplittedArea.TallSectorBuilder;
             twoBuilder = JsSplitter.SplittedArea.TallSectorBuilder;
