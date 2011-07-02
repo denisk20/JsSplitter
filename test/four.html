@@ -9,16 +9,16 @@
         JsSplitter.splitterWidth = 12;
         var outerSplittedArea;
         window.onresize = function() {
-            setTimeout(function() {outerSplittedArea.draw()}, 1);
+//            setTimeout(function() {outerSplittedArea.draw()}, 1);
             outerSplittedArea.draw();
         };
 
         function split() {
             var outerOptions = {
                 w: 0.3,
-                h: 0.1,
+                h: 0.5,
                 vSplitterColor: "black",
-                hSplitterColor: "transparent"
+                hSplitterColor: "black"
             };
             outerSplittedArea = new JsSplitter.SplittedArea(outerOptions,_("parent"), _("nw"), _("ne"), _("se"), _("sw"));
             var innerOptions = {

@@ -654,8 +654,16 @@
     };
 
     JsSplitter.SplittedArea.prototype.draw = function() {
+        this.disableChildren();
+        this.disableSplitters();
+
         this.drawSections();
+
+//        this.enableChildren();
+
         this.drawSplitters();
+
+        this.enableSplitters();
     };
     JsSplitter.SplittedArea.prototype.addSubArea = function(sector, /**JsSplitter.SplittedArea*/ childArea) {
         var parent;
@@ -727,30 +735,6 @@
             }
         });
     };
-//    JsSplitter.SplittedArea.prototype.addSplitters = function() {
-//        if (this.vSplitter) {
-//            this.base.appendChild(this.vSplitter);
-//        }
-//        if (this.hSplitter) {
-//            this.base.appendChild(this.hSplitter);
-//        }
-//        for(var i = 0; i < this._children.length; i++) {
-//            this._children[i].addSplitters();
-//        }
-//    };
-//
-//    JsSplitter.SplittedArea.prototype.removeSplitters = function() {
-//        if (this.vSplitter) {
-//            this.base.removeChild(this.vSplitter);
-//        }
-//        if (this.hSplitter) {
-//            this.base.removeChild(this.hSplitter);
-//        }
-//        for(var i = 0; i < this._children.length; i++) {
-//            this._children[i].removeSplitters();
-//        }
-//    };
-
     JsSplitter.SplittedArea.prototype.paintArrows = function() {
         //todo
     };
@@ -760,17 +744,62 @@
             this._children[i].paintArrows();
         }
     };
-    JsSplitter.SplittedArea.prototype.drawSections = function(){
+    JsSplitter.SplittedArea.prototype.disable = function() {
+        this.base.style.display = "none";
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].disable();
+        }
+    };
+    JsSplitter.SplittedArea.prototype.enable = function() {
+        this.base.style.display = "block";
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].enable();
+        }
+    };
+    JsSplitter.SplittedArea.prototype.disableChildren = function() {
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].disable();
+        }
+    };
+    JsSplitter.SplittedArea.prototype.enableChildren = function() {
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].enable();
+        }
+    };
+    JsSplitter.SplittedArea.prototype.disableSplitters = function() {
+        if (this.hSplitter) {
+            this.hSplitter.style.display = "none";
+        }
+        if (this.vSplitter) {
+            this.vSplitter.style.display = "none";
+        }
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].disableSplitters();
+        }
+    };
+    JsSplitter.SplittedArea.prototype.enableSplitters = function() {
+        if (this.hSplitter) {
+            this.hSplitter.style.display = "block";
+        }
+        if (this.vSplitter) {
+            this.vSplitter.style.display = "block";
+        }
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].enableSplitters();
+        }
+    };
+    JsSplitter.SplittedArea.prototype.drawSections = function() {
         this.drawOne();
         this.drawTwo();
         this.drawThree();
         this.drawFour();
 
         for(var i = 0; i < this._children.length; i++) {
+            this._children[i].base.style.display = "block";
             this._children[i].drawSections();
         }
     };
-    JsSplitter.SplittedArea.prototype.drawSplitters = function(){
+    JsSplitter.SplittedArea.prototype.drawSplitters = function() {
         this.drawHSplitter();
         this.drawVSplitter();
 
@@ -779,11 +808,39 @@
         }
     };
 
+    JsSplitter.SplittedArea.prototype.appendChildren = function() {
+        if (this.one) {
+            this.base.appendChild(this.one);
+        }
+        if (this.two) {
+            this.base.appendChild(this.two);
+        }
+        if (this.three) {
+            this.base.appendChild(this.three);
+        }
+        if (this.four) {
+            this.base.appendChild(this.four);
+        }
+        if(this.vSplitter) {
+            this.base.appendChild(this.vSplitter);
+        }
+        if(this.hSplitter) {
+            this.base.appendChild(this.hSplitter);
+        }
+        if (this._children[0]) {
+            this.three.appendChild(this._children[0].base);
+        }
+        for(var i = 0; i < this._children.length; i++) {
+            this._children[i].appendChildren();
+        }
+    };
+
     JsSplitter.SplittedArea.prototype.build = function() {
         this.attachBaseListeners();
         var that = this;
-        setTimeout(function() {that.draw()}, 1);
+//        setTimeout(function() {that.draw()}, 1);
         this.draw();
+//        this.appendChildren();
         //by that time all shapes are ready. We can rely on clientWidth and clientHeight to do some canvas paintings
         this.paint();
     };
