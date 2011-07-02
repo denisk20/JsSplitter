@@ -82,14 +82,14 @@
     JsSplitter.Dragger.prototype.drag = function(event, minLimit) {
         var delta = this.getDelta(event);
 
-        var towardsAmountStr = new StyleManipulator(this.cssElementPropertyName, this.towardsElements[0]).get();
+        var towardsAmountStr = this.getStyleProperty(this.towardsElements[0], this.cssElementPropertyName);
         var towardsAmount = parseFloat(towardsAmountStr.substring(0, towardsAmountStr.length - 2));
         var newTowardsAmount = towardsAmount - delta;
         if (newTowardsAmount < minLimit) {
             return;
         }
 
-        var oppositeAmountStr = new StyleManipulator(this.cssElementPropertyName, this.oppositeElements[0]).get();
+        var oppositeAmountStr = this.getStyleProperty(this.oppositeElements[0], this.cssElementPropertyName);
         var oppositeAmount = parseFloat(oppositeAmountStr.substring(0, oppositeAmountStr.length - 2));
         var newOppositeAmount = oppositeAmount + delta;
         if (newOppositeAmount < minLimit) {
@@ -98,20 +98,19 @@
 
         for (var i = 0; i < this.towardsElements.length; i++) {
             var tElement = this.towardsElements[i];
-            new StyleManipulator(this.cssElementPropertyName, tElement).set(newTowardsAmount + "px")
+            this.setStyleProperty(tElement, this.cssElementPropertyName, newTowardsAmount + "px");
         }
         for (var j = 0; j < this.oppositeElements.length; j++) {
             var oElement = this.oppositeElements[j];
-            new StyleManipulator(this.cssElementPropertyName, oElement).set(newOppositeAmount + "px")
+            this.setStyleProperty(oElement, this.cssElementPropertyName, newOppositeAmount + "px")
         }
 
-        var splitterStyleManipulator = new StyleManipulator(this.cssSplitterPropertyName, this.splitter);
-        var splitterPositionStr = splitterStyleManipulator.get();
+        var splitterPositionStr = this.getStyleProperty(this.splitter, this.cssSplitterPropertyName);
 
         var splitterPosition = parseFloat(splitterPositionStr.substring(0, splitterPositionStr.length - 2));
         var newSplitterPosition = splitterPosition - delta;
 
-        splitterStyleManipulator.set(newSplitterPosition + "px");
+        this.setStyleProperty(this.splitter, this.cssSplitterPropertyName, newSplitterPosition + "px");
 
         this.saveState(event);
         this.shiftTheSplitter(delta);
@@ -156,15 +155,13 @@
     };
 
     JsSplitter.Dragger.prototype.shiftHSplitter = function(delta) {
-        var newSplitterShift = this.area.hSplitterShift - (delta / this.area.base.clientHeight);
-        //todo should this belong to  JsSplitter.SplittedArea?
-        this.area.hSplitterShift = newSplitterShift;
+        var newSplitterShift = this.hSplitterShift - (delta / this.area.base.clientHeight);
+        this.hSplitterShift = newSplitterShift;
     };
 
     JsSplitter.Dragger.prototype.shiftVSplitter = function(delta) {
-        var newSplitterShift = this.area.vSplitterShift - (delta / this.area.base.clientWidth);
-        //todo should this belong to  JsSplitter.SplittedArea?
-        this.area.vSplitterShift = newSplitterShift;
+        var newSplitterShift = this.vSplitterShift - (delta / this.area.base.clientWidth);
+        this.vSplitterShift = newSplitterShift;
     };
 
     JsSplitter.SplittedArea = function(options, /**DOM*/ base, /**DOM*/one, /**DOM*/two, /**DOM*/three, /**DOM*/four) {
@@ -173,28 +170,24 @@
         this.two = two;
         this.three = three;
         this.four = four;
-        var vSplitterShift = options.w,
-            hSplitterShift = options.h;
-        if(options.splitterWidth) {
+        this.initialVSplitterShift = options.w;
+        this.initialHSplitterShift = options.h;
+        if (options.splitterWidth) {
             this.splitterWidth = options.splitterWidth;
         } else {
             this.splitterWidth = JsSplitter.splitterWidth;
         }
-        if(options.vSplitterColor) {
+        if (options.vSplitterColor) {
             this.vSplitterColor = options.vSplitterColor;
         } else {
             this.vSplitterColor = JsSplitter.vSplitterColor;
         }
-        if(options.hSplitterColor) {
+        if (options.hSplitterColor) {
             this.hSplitterColor = options.hSplitterColor;
         } else {
             this.hSplitterColor = JsSplitter.hSplitterColor;
         }
-        this.vSplitterShift = vSplitterShift;
-        this.hSplitterShift = hSplitterShift;
         this._children = [];
-
-        this.dragger = new JsSplitter.Dragger(this);
 
         for (var i = 2; i < arguments.length; i++) {
             var tile = arguments[i];
@@ -445,186 +438,346 @@
         buildFour: function() {
         }
     };
-    JsSplitter.SplittedArea.prototype.init = function() {
-        var oneBuilder;
-        var twoBuilder;
-        var threeBuilder;
-        var fourBuilder;
-        var hSplitterBuilder;
-        var vSplitterBuilder;
-        if (this.one && this.two && this.three && this.four) {
-            oneBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
-            twoBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
-            threeBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
-            fourBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
+    JsSplitter.SplittedArea.OrdinalSectorRenderer = {
+        drawOne: function(area) {
+            area.one.style.width = (area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
+            area.one.style.height = (area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
+        },
+        drawTwo: function(area) {
+            area.two.style.width = (area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
+            area.two.style.height = (area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
+        },
+        drawThree: function(area) {
+            area.three.style.width = (area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
+            area.three.style.height = (area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
+        },
+        drawFour: function(area) {
+            area.four.style.width = (area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
+            area.four.style.height = (area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
+        }
+    };
+    JsSplitter.SplittedArea.TallSectorRenderer = {
+        drawOne: function(area) {
+            area.one.style.width = "100%";
+            area.one.style.height = (area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
+        },
+        drawTwo: function(area) {
+            area.two.style.width = (area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
+            area.two.style.height = "100%";
+        },
+        drawThree: function(area) {
+            area.three.style.width = "100%";
+            area.three.style.height = (area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
+        },
+        drawFour: function(area) {
+            area.four.style.width = (area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
+            area.four.style.height = "100%";
+        }
+    };
+    JsSplitter.SplittedArea.EmptySectorRenderer = {
+        drawOne: function() {
+        },
+        drawTwo: function() {
+        },
+        drawThree: function() {
+        },
+        drawFour: function() {
+        }
+    };
 
-            hSplitterBuilder = JsSplitter.SplittedArea.OrdinalSplitterBuilder;
-            vSplitterBuilder = JsSplitter.SplittedArea.OrdinalSplitterBuilder;
+    JsSplitter.SplittedArea.BaseSplitterRenderer = {
+        drawBaseHSplitter: function(area) {
+            area.hSplitter.style.top = (area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
+        },
 
-            //todo these functions should be prototypes
-            this.dragger.setHDraggableElements = function() {
+        drawBaseVSplitter: function(area) {
+            area.vSplitter.style.left = (area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
+        }
+    };
+
+    JsSplitter.SplittedArea.OrdinalSplitterRenderer = {
+        drawHSplitter: function(area) {
+            JsSplitter.SplittedArea.BaseSplitterRenderer.drawBaseHSplitter(area);
+        },
+
+        drawVSplitter: function(area) {
+            JsSplitter.SplittedArea.BaseSplitterRenderer.drawBaseVSplitter(area);
+        }
+    };
+
+    JsSplitter.SplittedArea.TowardedSplitterRenderer = {
+        drawHSplitter: function(area) {
+            JsSplitter.SplittedArea.BaseSplitterRenderer.drawBaseHSplitter(area);
+            area.hSplitter.style.width = (area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
+        },
+
+        drawVSplitter: function(area) {
+            JsSplitter.SplittedArea.BaseSplitterRenderer.drawBaseVSplitter(area);
+            area.vSplitter.style.height = (area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
+        }
+    };
+
+    JsSplitter.SplittedArea.OpposedSplitterRenderer = {
+        drawHSplitter: function(area) {
+            JsSplitter.SplittedArea.BaseSplitterRenderer.drawBaseHSplitter(area);
+            area.hSplitter.style.width = (area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
+        },
+
+        drawVSplitter: function(area) {
+            JsSplitter.SplittedArea.BaseSplitterRenderer.drawBaseVSplitter(area);
+            area.vSplitter.style.height = (area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
+        }
+    };
+
+    JsSplitter.SplittedArea.EmptySplitterRenderer = {
+        drawHSplitter: function() {
+        },
+
+        drawVSplitter: function() {
+        }
+    };
+    JsSplitter.SplittedArea.GenericFactory = {
+        build: function (options, factory) {
+            var result;
+            if (options.one && options.two && options.three && options.four) {
+                result = factory.fourAreas();
+            } else if(options.one && ! options.two && options.three && options.four) {
+                result = factory.bigTop();
+            } else if(options.one && options.two && ! options.three && options.four) {
+                result = factory.bigRight();
+            } else if(options.one && ! options.two && options.three && ! options.four) {
+                result = factory.horizontalSplit();
+            }
+        //todo add the rest of cases
+            return result;
+        }
+    };
+    JsSplitter.SplittedArea.SectorBuildersFactory = {
+        fourAreas: function() {
+            return {
+                oneBuilder: JsSplitter.SplittedArea.OrdinalSectorBuilder,
+                twoBuilder: JsSplitter.SplittedArea.OrdinalSectorBuilder,
+                threeBuilder: JsSplitter.SplittedArea.OrdinalSectorBuilder,
+                fourBuilder: JsSplitter.SplittedArea.OrdinalSectorBuilder
+            }
+        },
+        bigTop: function() {
+            return {
+                oneBuilder: JsSplitter.SplittedArea.TallSectorBuilder,
+                twoBuilder: JsSplitter.SplittedArea.EmptySectorBuilder,
+                threeBuilder: JsSplitter.SplittedArea.OrdinalSectorBuilder,
+                fourBuilder: JsSplitter.SplittedArea.OrdinalSectorBuilder
+            }
+        },
+        bigRight: function() {
+            return {
+                oneBuilder: JsSplitter.SplittedArea.OrdinalSectorBuilder,
+                twoBuilder: JsSplitter.SplittedArea.TallSectorBuilder,
+                threeBuilder: JsSplitter.SplittedArea.EmptySectorBuilder,
+                fourBuilder: JsSplitter.SplittedArea.OrdinalSectorBuilder
+            }
+        },
+        horizontalSplit: function() {
+            return {
+                oneBuilder: JsSplitter.SplittedArea.TallSectorBuilder,
+                twoBuilder: JsSplitter.SplittedArea.EmptySectorBuilder,
+                threeBuilder: JsSplitter.SplittedArea.TallSectorBuilder,
+                fourBuilder: JsSplitter.SplittedArea.EmptySectorBuilder
+            }
+        }
+        //todo add the rest of cases
+    };
+    JsSplitter.SplittedArea.SplitterBuildersFactory = {
+        fourAreas: function() {
+            return {
+                hSplitterBuilder: JsSplitter.SplittedArea.OrdinalSplitterBuilder,
+                vSplitterBuilder: JsSplitter.SplittedArea.OrdinalSplitterBuilder
+            }
+        },
+        bigTop: function() {
+            return {
+                hSplitterBuilder: JsSplitter.SplittedArea.OrdinalSplitterBuilder,
+                vSplitterBuilder: JsSplitter.SplittedArea.OppositeSplitterBuilder
+            }
+        },
+        bigRight: function() {
+            return {
+                hSplitterBuilder: JsSplitter.SplittedArea.TowardedSplitterBuilder,
+                vSplitterBuilder: JsSplitter.SplittedArea.OrdinalSplitterBuilder
+            }
+        },
+        horizontalSplit: function() {
+            return {
+                hSplitterBuilder: JsSplitter.SplittedArea.OrdinalSplitterBuilder,
+                vSplitterBuilder: JsSplitter.SplittedArea.EmptySplitterBuilder
+            }
+        }
+        //todo add the rest of cases
+    };
+    JsSplitter.SplittedArea.DraggerFactory = {
+        _buildDragger: function(){
+            var dragger = new JsSplitter.Dragger();
+            return dragger;
+        },
+        fourAreas: function() {
+            var dragger = this._buildDragger();
+            dragger.setHDraggableElements = function() {
                 this.towardsElements = [this.area.one, this.area.four];
                 this.oppositeElements = [this.area.three, this.area.two];
             };
-            this.dragger.setVDraggableElements = function() {
+            dragger.setVDraggableElements = function() {
                 this.towardsElements = [this.area.one, this.area.two];
                 this.oppositeElements = [this.area.three, this.area.four];
             };
-
-            this.drawOne = function() {
-                this.one.style.width = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
-                this.one.style.height = (this.base.clientHeight * this.hSplitterShift - this.splitterWidth / 2) + "px";
-            };
-            this.drawTwo = function() {
-                this.two.style.width = (this.base.clientWidth * (1 - this.vSplitterShift) - this.splitterWidth / 2) + "px";
-                this.two.style.height = (this.base.clientHeight * this.hSplitterShift - this.splitterWidth / 2) + "px";
-            };
-            this.drawThree = function() {
-                this.three.style.width = (this.base.clientWidth * (1 - this.vSplitterShift) - this.splitterWidth / 2) + "px";
-                this.three.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - this.splitterWidth / 2) + "px";
-            };
-            this.drawFour = function() {
-                this.four.style.width = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
-                this.four.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - this.splitterWidth / 2) + "px";
-            };
-
-            this.drawHSplitterItself = function() {
-                this.hSplitter.style.top = (this.base.clientHeight * this.hSplitterShift - this.splitterWidth / 2) + "px";
-            };
-            this.drawVSplitterItself = function() {
-                this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
-            };
-
-        } else if (this.one && ! this.two && this.three && this.four) {
-            oneBuilder = JsSplitter.SplittedArea.TallSectorBuilder;
-            twoBuilder = JsSplitter.SplittedArea.EmptySectorBuilder;
-            threeBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
-            fourBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
-
-            hSplitterBuilder = JsSplitter.SplittedArea.OrdinalSplitterBuilder;
-            vSplitterBuilder = JsSplitter.SplittedArea.OppositeSplitterBuilder;
-
-            this.dragger.setHDraggableElements = function() {
+            return dragger;
+        },
+        bigTop: function() {
+            var dragger = this._buildDragger();
+            dragger.setHDraggableElements = function() {
                 this.towardsElements = [this.area.four];
                 this.oppositeElements = [this.area.three];
             };
-            this.dragger.setVDraggableElements = function() {
+            dragger.setVDraggableElements = function() {
                 this.towardsElements = [this.area.one];
                 this.oppositeElements = [this.area.three, this.area.four];
             };
-
-            this.drawOne = function() {
-                this.one.style.width = "100%";
-                this.one.style.height = (this.base.clientHeight * this.hSplitterShift - this.splitterWidth / 2) + "px";
-            };
-            this.drawTwo = function() {
-                //do nothing
-            };
-            this.drawThree = function() {
-                this.three.style.width = (this.base.clientWidth * (1 - this.vSplitterShift) - this.splitterWidth / 2) + "px";
-                this.three.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - this.splitterWidth / 2) + "px";
-            };
-            this.drawFour = function() {
-                this.four.style.width = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
-                this.four.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - this.splitterWidth / 2) + "px";
-            };
-
-            this.drawHSplitterItself = function() {
-                this.hSplitter.style.top = (this.base.clientHeight * this.hSplitterShift - this.splitterWidth / 2) + "px";
-                this.hSplitter.style.width = "100%";
-            };
-            this.drawVSplitterItself = function() {
-                this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
-                this.vSplitter.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - this.splitterWidth / 2) + "px";
-            };
-        } else if (this.one && this.two && ! this.three && this.four) {
-            oneBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
-            twoBuilder = JsSplitter.SplittedArea.TallSectorBuilder;
-            threeBuilder = JsSplitter.SplittedArea.EmptySectorBuilder;
-            fourBuilder = JsSplitter.SplittedArea.OrdinalSectorBuilder;
-
-            hSplitterBuilder = JsSplitter.SplittedArea.TowardedSplitterBuilder;
-            vSplitterBuilder = JsSplitter.SplittedArea.OrdinalSplitterBuilder;
-
-            this.dragger.setHDraggableElements = function() {
+            return dragger;
+        },
+        bigRight: function() {
+            var dragger = this._buildDragger();
+            dragger.setHDraggableElements = function() {
                 this.towardsElements = [this.area.one, this.area.four];
                 this.oppositeElements = [this.area.two];
             };
-            this.dragger.setVDraggableElements = function() {
+            dragger.setVDraggableElements = function() {
                 this.towardsElements = [this.area.one];
                 this.oppositeElements = [this.area.four];
             };
-
-            //todo!!! - these functions should be moved into a builder
-            this.drawOne = function() {
-                this.one.style.width = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
-                this.one.style.height = (this.base.clientHeight * this.hSplitterShift - this.splitterWidth / 2) + "px";
-            };
-            this.drawTwo = function() {
-                this.two.style.width = (this.base.clientWidth * (1 - this.vSplitterShift) - this.splitterWidth / 2) + "px";
-                this.two.style.height = "100%";
-            };
-            this.drawThree = function() {
-                //do nothing
-            };
-            this.drawFour = function() {
-                this.four.style.width = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
-                this.four.style.height = (this.base.clientHeight * (1 - this.hSplitterShift) - this.splitterWidth / 2) + "px";
-            };
-
-            this.drawHSplitterItself = function() {
-                this.hSplitter.style.top = (this.base.clientHeight * this.hSplitterShift - this.splitterWidth / 2) + "px";
-                this.hSplitter.style.width = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
-            };
-            this.drawVSplitterItself = function() {
-                this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
-                this.vSplitter.style.height = "100%";
-            };
-        } else if(this.one && this.two && ! this.three && !this.four) {
-            oneBuilder = JsSplitter.SplittedArea.TallSectorBuilder;
-            twoBuilder = JsSplitter.SplittedArea.TallSectorBuilder;
-            threeBuilder = JsSplitter.SplittedArea.EmptySectorBuilder;
-            fourBuilder = JsSplitter.SplittedArea.EmptySectorBuilder;
-
-            hSplitterBuilder = JsSplitter.SplittedArea.EmptySplitterBuilder;
-            vSplitterBuilder = JsSplitter.SplittedArea.OrdinalSplitterBuilder;
-
-            this.dragger.setHDraggableElements = function() {
-                this.towardsElements = [this.area.one];
-                this.oppositeElements = [this.area.two];
-            };
-            this.dragger.setVDraggableElements = function() {
+            return dragger;
+        },
+        horizontalSplit: function() {
+            var dragger = this._buildDragger();
+            dragger.setHDraggableElements = function() {
                 this.towardsElements = [];
                 this.oppositeElements = [];
             };
-
-            this.drawOne = function() {
-                this.one.style.width = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";
-                this.one.style.height = "100%";
+            dragger.setVDraggableElements = function() {
+                this.towardsElements = [this.area.one];
+                this.oppositeElements = [this.area.three];
             };
-            this.drawTwo = function() {
-                this.two.style.width = (this.base.clientWidth * (1 - this.vSplitterShift) - this.splitterWidth / 2) + "px";
-                this.two.style.height = "100%";
-            };
-            this.drawThree = function() {
-            };
-            this.drawFour = function() {
-            };
-
-            this.drawHSplitterItself = function() {
-            };
-            this.drawVSplitterItself = function() {
-                this.vSplitter.style.left = (this.base.clientWidth * this.vSplitterShift - this.splitterWidth / 2) + "px";            };
+            return dragger;
         }
-        oneBuilder.buildOne(this.one);
-        twoBuilder.buildTwo(this.two);
-        threeBuilder.buildThree(this.three);
-        fourBuilder.buildFour(this.four);
+        //todo add the rest of cases
+    };
+    JsSplitter.SplittedArea.SectorRendererFactory = {
+        fourAreas: function() {
+            return {
+                oneRenderer: JsSplitter.SplittedArea.OrdinalSectorRenderer,
+                twoRenderer: JsSplitter.SplittedArea.OrdinalSectorRenderer,
+                threeRenderer: JsSplitter.SplittedArea.OrdinalSectorRenderer,
+                fourRenderer: JsSplitter.SplittedArea.OrdinalSectorRenderer
+            }
+        },
+        bigTop: function() {
+            return {
+                oneRenderer: JsSplitter.SplittedArea.TallSectorRenderer,
+                twoRenderer: JsSplitter.SplittedArea.EmptySectorRenderer,
+                threeRenderer: JsSplitter.SplittedArea.OrdinalSectorRenderer,
+                fourRenderer: JsSplitter.SplittedArea.OrdinalSectorRenderer
+            }
+        },
+        bigRight: function() {
+            return {
+                oneRenderer: JsSplitter.SplittedArea.OrdinalSectorRenderer,
+                twoRenderer: JsSplitter.SplittedArea.TallSectorRenderer,
+                threeRenderer: JsSplitter.SplittedArea.EmptySectorRenderer,
+                fourRenderer: JsSplitter.SplittedArea.OrdinalSectorRenderer
+            }
+        },
+        horizontalSplit: function() {
+            return {
+                oneRenderer: JsSplitter.SplittedArea.TallSectorRenderer,
+                twoRenderer: JsSplitter.SplittedArea.EmptySectorRenderer,
+                threeRenderer: JsSplitter.SplittedArea.TallSectorRenderer,
+                fourRenderer: JsSplitter.SplittedArea.EmptySectorRenderer
+            }
+        }
+        //todo add the rest of cases
+    };
+    JsSplitter.SplittedArea.SplitterRendererFactory = {
+        fourAreas: function() {
+            return {
+                hSplitterRenderer: JsSplitter.SplittedArea.OrdinalSplitterRenderer,
+                vSplitterRenderer: JsSplitter.SplittedArea.OrdinalSplitterRenderer
+            }
+        },
+        bigTop: function() {
+            return {
+                hSplitterRenderer: JsSplitter.SplittedArea.OrdinalSplitterRenderer,
+                vSplitterRenderer: JsSplitter.SplittedArea.OpposedSplitterRenderer
+            }
+        },
+        bigRight: function() {
+            return {
+                hSplitterRenderer: JsSplitter.SplittedArea.TowardedSplitterRenderer,
+                vSplitterRenderer: JsSplitter.SplittedArea.OrdinalSplitterRenderer
+            }
+        },
+        horizontalSplit: function() {
+            return {
+                hSplitterRenderer: JsSplitter.SplittedArea.OrdinalSplitterRenderer,
+                vSplitterRenderer: JsSplitter.SplittedArea.EmptySplitterRenderer
+            }
+        }
+        //todo add the rest of cases
+    };
+    JsSplitter.SplittedArea.prototype.init = function() {
+        var sectors = {
+            one: this.one,
+            two: this.two,
+            three: this.three,
+            four: this.four
+        };
+        var sectorBuilders = JsSplitter.SplittedArea.GenericFactory.build(
+            sectors,
+            JsSplitter.SplittedArea.SectorBuildersFactory
+        );
+        var splitterBuilders = JsSplitter.SplittedArea.GenericFactory.build(
+            sectors,
+            JsSplitter.SplittedArea.SplitterBuildersFactory
+        );
+        var dragger = JsSplitter.SplittedArea.GenericFactory.build(
+            sectors,
+            JsSplitter.SplittedArea.DraggerFactory
+        );
+        dragger.area = this;
+        dragger.hSplitterShift = this.initialHSplitterShift;
+        dragger.vSplitterShift = this.initialVSplitterShift;
+        this.dragger = dragger;
 
-        var hSplitter = hSplitterBuilder.buildHSplitter(this);
-        var vSplitter = vSplitterBuilder.buildVSplitter(this);
-        this.hSplitter = hSplitter;
-        this.vSplitter = vSplitter;
+        var sectorRenderers = JsSplitter.SplittedArea.GenericFactory.build(
+            sectors,
+            JsSplitter.SplittedArea.SectorRendererFactory
+        );
+        this.drawOne = sectorRenderers.oneRenderer.drawOne;
+        this.drawTwo = sectorRenderers.twoRenderer.drawTwo;
+        this.drawThree = sectorRenderers.threeRenderer.drawThree;
+        this.drawFour = sectorRenderers.fourRenderer.drawFour;
+
+        var splitterRenderers = JsSplitter.SplittedArea.GenericFactory.build(
+            sectors,
+            JsSplitter.SplittedArea.SplitterRendererFactory
+        );
+        this.drawHSplitter = splitterRenderers.hSplitterRenderer.drawHSplitter;
+        this.drawVSplitter = splitterRenderers.vSplitterRenderer.drawVSplitter;
+
+        sectorBuilders.oneBuilder.buildOne(this.one);
+        sectorBuilders.twoBuilder.buildTwo(this.two);
+        sectorBuilders.threeBuilder.buildThree(this.three);
+        sectorBuilders.fourBuilder.buildFour(this.four);
+
+        this.hSplitter = splitterBuilders.hSplitterBuilder.buildHSplitter(this);
+        this.vSplitter = splitterBuilders.vSplitterBuilder.buildVSplitter(this);
 
         if (this.one) {
             this.base.appendChild(this.one);
@@ -638,28 +791,19 @@
         if (this.four) {
             this.base.appendChild(this.four);
         }
-        if(this.vSplitter) {
-            this.base.appendChild(vSplitter);
+        if (this.hSplitter) {
+            this.base.appendChild(this.hSplitter);
         }
-        if(this.hSplitter) {
-            this.base.appendChild(hSplitter);
+        if (this.vSplitter) {
+            this.base.appendChild(this.vSplitter);
         }
 
     };
-    JsSplitter.SplittedArea.prototype.drawHSplitter = function() {
-        this.drawHSplitterItself();
-    };
-    JsSplitter.SplittedArea.prototype.drawVSplitter = function() {
-        this.drawVSplitterItself();
-    };
-
     JsSplitter.SplittedArea.prototype.draw = function() {
         this.disableChildren();
         this.disableSplitters();
 
-        this.drawSections();
-
-//        this.enableChildren();
+        this.drawSectors();
 
         this.drawSplitters();
 
@@ -685,17 +829,12 @@
         this._children.push(childArea);
     };
 
-    function StyleManipulator(property, element) {
-        this.property = property;
-        this.element = element;
-    }
-
-    StyleManipulator.prototype.set = function(value) {
-        this.element.style[this.property] = value;
+    JsSplitter.Dragger.prototype.setStyleProperty = function(element, property, value) {
+        element.style[property] = value;
     };
 
-    StyleManipulator.prototype.get = function() {
-        return this.element.style[this.property];
+    JsSplitter.Dragger.prototype.getStyleProperty = function(element, property) {
+        return element.style[property];
     };
 
 
@@ -722,7 +861,7 @@
         EventUtil.addHandler(this.base, "mouseup", function() {
             JsSplitter.disableVDrag();
             JsSplitter.disableHDrag();
-            if(that.mouseUpHook) {
+            if (that.mouseUpHook) {
                 that.mouseUpHook();
             }
         });
@@ -740,29 +879,29 @@
     };
     JsSplitter.SplittedArea.prototype.paint = function() {
         this.paintArrows();
-        for(var i = 0; i < this._children.length; i++) {
+        for (var i = 0; i < this._children.length; i++) {
             this._children[i].paintArrows();
         }
     };
     JsSplitter.SplittedArea.prototype.disable = function() {
         this.base.style.display = "none";
-        for(var i = 0; i < this._children.length; i++) {
+        for (var i = 0; i < this._children.length; i++) {
             this._children[i].disable();
         }
     };
     JsSplitter.SplittedArea.prototype.enable = function() {
         this.base.style.display = "block";
-        for(var i = 0; i < this._children.length; i++) {
+        for (var i = 0; i < this._children.length; i++) {
             this._children[i].enable();
         }
     };
     JsSplitter.SplittedArea.prototype.disableChildren = function() {
-        for(var i = 0; i < this._children.length; i++) {
+        for (var i = 0; i < this._children.length; i++) {
             this._children[i].disable();
         }
     };
     JsSplitter.SplittedArea.prototype.enableChildren = function() {
-        for(var i = 0; i < this._children.length; i++) {
+        for (var i = 0; i < this._children.length; i++) {
             this._children[i].enable();
         }
     };
@@ -773,7 +912,7 @@
         if (this.vSplitter) {
             this.vSplitter.style.display = "none";
         }
-        for(var i = 0; i < this._children.length; i++) {
+        for (var i = 0; i < this._children.length; i++) {
             this._children[i].disableSplitters();
         }
     };
@@ -784,26 +923,27 @@
         if (this.vSplitter) {
             this.vSplitter.style.display = "block";
         }
-        for(var i = 0; i < this._children.length; i++) {
+        for (var i = 0; i < this._children.length; i++) {
             this._children[i].enableSplitters();
         }
     };
-    JsSplitter.SplittedArea.prototype.drawSections = function() {
-        this.drawOne();
-        this.drawTwo();
-        this.drawThree();
-        this.drawFour();
+    JsSplitter.SplittedArea.prototype.drawSectors = function() {
+        this.drawOne(this);
+        this.drawTwo(this);
+        this.drawThree(this);
+        this.drawFour(this);
 
-        for(var i = 0; i < this._children.length; i++) {
+        for (var i = 0; i < this._children.length; i++) {
+            //enable child's base so it's clientWidth and clientHeight get calculated
             this._children[i].base.style.display = "block";
-            this._children[i].drawSections();
+            this._children[i].drawSectors();
         }
     };
     JsSplitter.SplittedArea.prototype.drawSplitters = function() {
-        this.drawHSplitter();
-        this.drawVSplitter();
+        this.drawHSplitter(this);
+        this.drawVSplitter(this);
 
-        for(var i = 0; i < this._children.length; i++) {
+        for (var i = 0; i < this._children.length; i++) {
             this._children[i].drawSplitters();
         }
     };
@@ -821,26 +961,23 @@
         if (this.four) {
             this.base.appendChild(this.four);
         }
-        if(this.vSplitter) {
+        if (this.vSplitter) {
             this.base.appendChild(this.vSplitter);
         }
-        if(this.hSplitter) {
+        if (this.hSplitter) {
             this.base.appendChild(this.hSplitter);
         }
         if (this._children[0]) {
             this.three.appendChild(this._children[0].base);
         }
-        for(var i = 0; i < this._children.length; i++) {
+        for (var i = 0; i < this._children.length; i++) {
             this._children[i].appendChildren();
         }
     };
 
     JsSplitter.SplittedArea.prototype.build = function() {
         this.attachBaseListeners();
-        var that = this;
-//        setTimeout(function() {that.draw()}, 1);
         this.draw();
-//        this.appendChildren();
         //by that time all shapes are ready. We can rely on clientWidth and clientHeight to do some canvas paintings
         this.paint();
     };
@@ -853,6 +990,3 @@
     JsSplitter.H = 1;
     JsSplitter.V = 2;
 })();
-
-
-

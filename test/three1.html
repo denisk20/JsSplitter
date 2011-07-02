@@ -15,25 +15,25 @@
 
         function split() {
             var outerOptions = {
-                w: 0.1,
+                w: 0.7,
                 h: 0.7
             };
-            outerSplittedArea = new JsSplitter.SplittedArea(outerOptions,_("parent"), _("nw"), null, _("se"), _("sw"));
+            outerSplittedArea = new JsSplitter.SplittedArea(outerOptions,_("parent"), _("nw"), _("ne"), null, _("sw"));
             var innerOptions = {
                 w:0.7,
                 h:0.2
             };
-            var innerSplittedArea = new JsSplitter.SplittedArea(innerOptions, _("i_parent"), _("i_nw"), null, _("i_se"), _("i_sw"));
+            var innerSplittedArea = new JsSplitter.SplittedArea(innerOptions, _("i_parent"), _("i_nw"), _("i_ne"), null, _("i_sw"));
             var innerOptions1 = {
                 w:0.2,
                 h:0.3
             };
-            var innerSplittedArea1 = new JsSplitter.SplittedArea(innerOptions1, _("i_i_parent"), _("i_i_nw"), null, _("i_i_se"), _("i_i_sw"));
+            var innerSplittedArea1 = new JsSplitter.SplittedArea(innerOptions1, _("i_i_parent"), _("i_i_nw"), _("i_i_ne"), null, _("i_i_sw"));
             var innerOptions2 = {
                 w: 0.6,
                 h:0.4
             };
-            var innerSplittedArea2 = new JsSplitter.SplittedArea(innerOptions2, _("i_i_i_parent"), _("i_i_i_nw"), null, _("i_i_i_se"), _("i_i_i_sw"));
+            var innerSplittedArea2 = new JsSplitter.SplittedArea(innerOptions2, _("i_i_i_parent"), _("i_i_i_nw"), _("i_i_i_ne"), null, _("i_i_i_sw"));
 
             outerSplittedArea.addSubArea(JsSplitter.SplittedArea.NW, innerSplittedArea);
             innerSplittedArea.addSubArea(JsSplitter.SplittedArea.SW, innerSplittedArea1);
@@ -47,8 +47,8 @@
 <body onload="split()">
 <div class="parent"></div>
 <div class="nw"></div>
-<!--<div class="ne"></div>-->
-<div class="se"></div>
+<div class="ne"></div>
+<!--<div class="se"></div>-->
 <div class="sw"></div>
 
 <div class="i_parent"></div>

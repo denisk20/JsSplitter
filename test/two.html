@@ -11,16 +11,35 @@
         var outerSplittedArea;
         window.onresize = function() {
             outerSplittedArea.draw();
-            outerSplittedArea.draw();
         };
 
         function split() {
             var outerOptions = {
-                w: 0.1,
-                h: 0.7
+                h: 0.5
             };
-            outerSplittedArea = new JsSplitter.SplittedArea(outerOptions,_("parent"), _("nw"), _("ne"), null, null);
+            outerSplittedArea = new JsSplitter.SplittedArea(outerOptions, _("parent"), _("nw"), null, _("se"), null);
+            var innerTopOptions = {
+                w: 0.6,
+                h: 0.7,
+                splitterWidth: 6
+            };
+            var innerArea1 = new JsSplitter.SplittedArea(innerTopOptions, _("i_parent"), _("i_nw"), _("i_ne"), _("i_se"), _("i_sw"));
+            var innerBottomOptions = {
+                w: 0.5,
+                h: 0.5,
+                splitterWidth: 6
+            };
+            var innerArea2 = new JsSplitter.SplittedArea(innerBottomOptions, _("i_i_parent"), _("i_i_nw"), _("i_i_ne"), _("i_i_se"), _("i_i_sw"));
+            var innerInnerOptions = {
+                w: 0.5,
+                h: 0.5,
+                splitterWidth: 4
+            };
+            var innerInnerArea = new JsSplitter.SplittedArea(innerInnerOptions, _("i_i_i_parent"), _("i_i_i_nw"), _("i_i_i_ne"), _("i_i_i_se"), _("i_i_sw"));
 
+            outerSplittedArea.addSubArea(JsSplitter.SplittedArea.NW, innerArea1);
+            outerSplittedArea.addSubArea(JsSplitter.SplittedArea.SE, innerArea2);
+            innerArea2.addSubArea(JsSplitter.SplittedArea.SE, innerInnerArea);
             outerSplittedArea.build();
         }
         //    ]]>
@@ -28,12 +47,11 @@
 </head>
 <body onload="split()">
 <div class="parent"></div>
-<div class="nw" on></div>
-<div class="ne"></div>
-<!--<div class="se"></div>-->
+<div class="nw"></div>
+<!--<div class="ne"></div>-->
+<div class="se"></div>
 <!--<div class="sw"></div>-->
 
-<!--
 <div class="i_parent"></div>
 <div class="i_nw"></div>
 <div class="i_ne"></div>
@@ -51,7 +69,6 @@
 <div class="i_i_i_ne"></div>
 <div class="i_i_i_se"></div>
 <div class="i_i_i_sw"></div>
--->
 
 </body>
 </html>
