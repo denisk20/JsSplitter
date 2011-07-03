@@ -20,6 +20,13 @@
         hSplitterColor : "#000000",
         hLimit: 10, //px
         vLimit: 10,  //px
+        animation: {
+            delay: 10,
+            step: 5,
+            buttonSize: 30,
+            towardsButtonColor: "red",
+            oppositeButtonColor: "orange"
+        },
         animationPlaying: false,
 
         disableVDrag: function () {
@@ -188,6 +195,52 @@
         } else {
             this.hSplitterColor = JsSplitter.hSplitterColor;
         }
+        this.animation = {};
+        if(options.animation) {
+            if(options.animation.delay) {
+                this.animation.delay = options.animation.delay;
+            } else {
+                this.animation.delay = JsSplitter.animation.delay;
+            }
+            if(options.animation.step) {
+                this.animation.step = options.animation.step;
+            } else {
+                this.animation.step = JsSplitter.animation.step;
+            }
+            if(options.animation.buttonSize) {
+                this.animation.buttonSize = options.animation.buttonSize;
+            } else {
+                this.animation.buttonSize = JsSplitter.animation.buttonSize;
+            }
+            if(options.animation.towardsButtonColor) {
+                this.animation.towardsButtonColor = options.animation.towardsButtonColor;
+            } else {
+                this.animation.towardsButtonColor = JsSplitter.animation.towardsButtonColor;
+            }
+            if(options.animation.oppositeButtonColor) {
+                this.animation.oppositeButtonColor = options.animation.oppositeButtonColor;
+            } else {
+                this.animation.oppositeButtonColor = JsSplitter.animation.oppositeButtonColor;
+            }
+        } else {
+            this.animation.delay = JsSplitter.animation.delay;
+            this.animation.step = JsSplitter.animation.step;
+            this.animation.buttonSize = JsSplitter.animation.buttonSize;
+            this.animation.buttonColor = JsSplitter.animation.buttonColor;
+            this.animation.towardsButtonColor = JsSplitter.animation.towardsButtonColor;
+            this.animation.oppositeButtonColor = JsSplitter.animation.oppositeButtonColor;
+        }
+        if(options.hLimit) {
+            this.hLimit = options.hLimit;
+        } else {
+            this.hLimit = JsSplitter.hLimit;
+        }
+        if(options.vLimit) {
+            this.vLimit = options.vLimit;
+        } else {
+            this.vLimit = JsSplitter.vLimit;
+        }
+
         this._children = [];
 
         for (var i = 2; i < arguments.length; i++) {
@@ -232,12 +285,11 @@
                         var shouldStop;
                         switch (direction) {
                             case JsSplitter.T:
-                                //todo from properties
-                                currentValue -= 5;
+                                currentValue -= dragger.area.animation.step;
                                 shouldStop = currentValue <= limit;
                                 break;
                             case JsSplitter.O:
-                                currentValue += 5;
+                                currentValue += dragger.area.animation.step;
                                 shouldStop = currentValue >= fullValue - limit;
                                 break;
                         }
@@ -252,12 +304,11 @@
 
                         dragger.drag(event, limit);
                         dragger.area.draw();
-                                //todo from properties?
-                    }, 10);
+                    }, dragger.area.animation.delay);
                 }
             });
         }
-    }
+    };
     JsSplitter.SplittedArea.SplitterUtils = {
         prepareHSplitter: function(area, hSplitter) {
             hSplitter.style.cursor = "n-resize";
@@ -300,8 +351,7 @@
                 var buttons = document.createElement("div");
                 buttons.style.position = "absolute";
                 buttons.style.left = "10%";
-                //todo from properties
-                buttons.style.width = "30px";
+                buttons.style.width = area.animation.buttonSize + "px";
                 buttons.style.height = "100%";
 
                 var towardsButton = document.createElement("canvas");
@@ -311,15 +361,14 @@
                 towardsButton.style.height = "100%";
                 towardsButton.style.position = "absolute";
                 towardsButton.style.left = 0;
-                towardsButton.style.backgroundColor = "red";
+                towardsButton.style.backgroundColor = area.animation.towardsButtonColor;
                 towardsButton.name = "towards";
                 oppositeButton.style.width = "50%";
                 oppositeButton.style.height = "100%";
                 oppositeButton.style.position = "absolute";
                 oppositeButton.style.right = 0;
                 oppositeButton.name = "opposite";
-                //todo from properties
-                oppositeButton.style.backgroundColor = "orange";
+                oppositeButton.style.backgroundColor = area.animation.oppositeButtonColor;
 
                 towardsButton.style.cursor = "Pointer";
                 oppositeButton.style.cursor = "Pointer";
@@ -336,8 +385,7 @@
                 buttons.style.position = "absolute";
                 buttons.style.top = "10%";
                 buttons.style.width = "100%";
-                //todo from properties
-                buttons.style.height = "30px";
+                buttons.style.height = area.animation.buttonSize + "px";
 
                 var towardsButton = document.createElement("canvas");
                 var oppositeButton = document.createElement("canvas");
@@ -346,15 +394,13 @@
                 towardsButton.style.height = "50%";
                 towardsButton.style.position = "absolute";
                 towardsButton.style.top = 0;
-                //todo from properties
-                towardsButton.style.backgroundColor = "red";
+                towardsButton.style.backgroundColor = area.animation.towardsButtonColor;
                 towardsButton.name = "towards";
                 oppositeButton.style.width = "100%";
                 oppositeButton.style.height = "50%";
                 oppositeButton.style.position = "absolute";
                 oppositeButton.style.bottom = 0;
-                //todo from properties
-                oppositeButton.style.backgroundColor = "orange";
+                oppositeButton.style.backgroundColor = area.animation.oppositeButtonColor;
                 oppositeButton.name = "opposite";
 
                 towardsButton.style.cursor = "Pointer";
@@ -922,15 +968,13 @@
             if (JsSplitter.VDRAG) {
                 event = EventUtil.getEvent(event);
                 JsSplitter.draggableArea.dragger.switchDragMode(JsSplitter.V);
-                //todo from properties
-                JsSplitter.draggableArea.dragger.drag(event, JsSplitter.vLimit);
+                JsSplitter.draggableArea.dragger.drag(event, this.vLimit);
                 JsSplitter.draggableArea.draw();
             }
             if (JsSplitter.HDRAG) {
                 event = EventUtil.getEvent(event);
                 JsSplitter.draggableArea.dragger.switchDragMode(JsSplitter.H);
-                //todo from properties
-                JsSplitter.draggableArea.dragger.drag(event, JsSplitter.hLimit);
+                JsSplitter.draggableArea.dragger.drag(event, this.hLimit);
                 JsSplitter.draggableArea.draw();
             }
         });
