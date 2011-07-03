@@ -200,7 +200,64 @@
 
         this.init();
     };
+    JsSplitter.DragAnimator = {
+        addHandlerToArrow: function(arrow, dragger, orientation, direction) {
+            EventUtil.addHandler(arrow, "click", function() {
+                if (! JsSplitter.animationPlaying) {
+                    JsSplitter.animationPlaying = true;
+                    dragger.switchDragMode(orientation);
+                    var startValue;
+                    var limit;
+                    var fullValue;
+                    var eventPropertyName;
+                    switch (orientation) {
+                        case JsSplitter.V :
+                            startValue = dragger.towardsElements[0].clientHeight;
+                            limit = JsSplitter.hLimit;
+                            fullValue = dragger.area.base.clientHeight;
+                            eventPropertyName = "clientY";
+                            dragger.currentY = startValue;
+                            break;
+                        case JsSplitter.H :
+                            startValue = dragger.towardsElements[0].clientWidth;
+                            limit = JsSplitter.vLimit;
+                            fullValue = dragger.area.base.clientWidth;
+                            eventPropertyName = "clientX";
+                            dragger.currentX = startValue;
+                            break;
+                    }
+                    var currentValue = startValue;
 
+                    var interval = setInterval(function() {
+                        var shouldStop;
+                        switch (direction) {
+                            case JsSplitter.T:
+                                //todo from properties
+                                currentValue -= 5;
+                                shouldStop = currentValue <= limit;
+                                break;
+                            case JsSplitter.O:
+                                currentValue += 5;
+                                shouldStop = currentValue >= fullValue - limit;
+                                break;
+                        }
+
+                        if (shouldStop) {
+                            clearInterval(interval);
+                            JsSplitter.animationPlaying = false;
+                            return;
+                        }
+                        var event = {};
+                        event[eventPropertyName] = currentValue;
+
+                        dragger.drag(event, limit);
+                        dragger.area.draw();
+                                //todo from properties?
+                    }, 10);
+                }
+            });
+        }
+    }
     JsSplitter.SplittedArea.SplitterUtils = {
         prepareHSplitter: function(area, hSplitter) {
             hSplitter.style.cursor = "n-resize";
@@ -269,50 +326,8 @@
                 buttons.appendChild(towardsButton);
                 buttons.appendChild(oppositeButton);
                 hSplitter.appendChild(buttons);
-                EventUtil.addHandler(towardsButton, "click", function() {
-                    if (! JsSplitter.animationPlaying) {
-                        JsSplitter.animationPlaying = true;
-                        area.dragger.switchDragMode(JsSplitter.V);
-                        var startHeight = area.dragger.towardsElements[0].clientHeight;
-                        area.dragger.currentY = startHeight;
-                        var currentHeight = startHeight - 1;
-                        var interval = setInterval(function() {
-                            if (currentHeight <= JsSplitter.vLimit) {
-                                clearInterval(interval);
-                                JsSplitter.animationPlaying = false;
-                                return;
-                            }
-                            var event = {clientY: currentHeight};
-
-                            area.dragger.drag(event, JsSplitter.vLimit);
-                            area.draw();
-                            //todo from properties
-                            currentHeight = currentHeight - 5;
-                        }, 10);
-                    }
-                });
-                EventUtil.addHandler(oppositeButton, "click", function() {
-                    if (! JsSplitter.animationPlaying) {
-                        JsSplitter.animationPlaying = true;
-                        area.dragger.switchDragMode(JsSplitter.V);
-                        var startHeight = area.dragger.towardsElements[0].clientHeight;
-                        area.dragger.currentY = startHeight;
-                        var currentHeight = startHeight + 1;
-                        var interval = setInterval(function() {
-                            if (currentHeight >= area.base.clientHeight - JsSplitter.vLimit) {
-                                clearInterval(interval);
-                                JsSplitter.animationPlaying = false;
-                                return;
-                            }
-                            var event = {clientY: currentHeight};
-
-                            area.dragger.drag(event, JsSplitter.vLimit);
-                            area.draw();
-                            //todo from properties
-                            currentHeight = currentHeight + 5;
-                        }, 10);
-                    }
-                });
+                JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, JsSplitter.V, JsSplitter.T);
+                JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, JsSplitter.V, JsSplitter.O);
             }
         },
         _addVCanvas: function(area, vSplitter) {
@@ -349,50 +364,8 @@
                 buttons.appendChild(oppositeButton);
 
                 vSplitter.appendChild(buttons);
-                EventUtil.addHandler(towardsButton, "click", function() {
-                    if (! JsSplitter.animationPlaying) {
-                        JsSplitter.animationPlaying = true;
-                        area.dragger.switchDragMode(JsSplitter.H);
-                        var startWidth = area.dragger.towardsElements[0].clientWidth;
-                        area.dragger.currentX = startWidth;
-                        var currentWidth = startWidth - 1;
-                        var interval = setInterval(function() {
-                            if (currentWidth <= JsSplitter.vLimit) {
-                                JsSplitter.animationPlaying = false;
-                                clearInterval(interval);
-                                return;
-                            }
-                            var event = {clientX: currentWidth};
-
-                            area.dragger.drag(event, JsSplitter.vLimit);
-                            area.draw();
-                            //todo from properties
-                            currentWidth -= 5;
-                        }, 10);
-                    }
-                });
-                EventUtil.addHandler(oppositeButton, "click", function() {
-                    if (! JsSplitter.animationPlaying) {
-                        JsSplitter.animationPlaying = true;
-                        area.dragger.switchDragMode(JsSplitter.H);
-                        var startWidth = area.dragger.towardsElements[0].clientWidth;
-                        area.dragger.currentX = startWidth;
-                        var currentWidth = startWidth + 1;
-                        var interval = setInterval(function() {
-                            if (currentWidth >= area.base.clientWidth - JsSplitter.vLimit) {
-                                JsSplitter.animationPlaying = false;
-                                clearInterval(interval);
-                                return;
-                            }
-                            var event = {clientX: currentWidth};
-
-                            area.dragger.drag(event, JsSplitter.vLimit);
-                            area.draw();
-                            //todo from properties
-                            currentWidth += 5;
-                        }, 10);
-                    }
-                });
+                JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, JsSplitter.H, JsSplitter.T);
+                JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, JsSplitter.H, JsSplitter.O);
             }
         }
     };
@@ -1150,6 +1123,6 @@
     JsSplitter.H = 1;
     JsSplitter.V = 2;
 
-    JsSplitter.T = 1;
-    JsSplitter.O = 2;
+    JsSplitter.T = 5;
+    JsSplitter.O = 6;
 })();
