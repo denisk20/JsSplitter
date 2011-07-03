@@ -238,6 +238,7 @@
                 var buttons = document.createElement("div");
                 buttons.style.position = "absolute";
                 buttons.style.left = "10%";
+                //todo from properties
                 buttons.style.width = "30px";
                 buttons.style.height = "100%";
 
@@ -249,19 +250,20 @@
                 towardsButton.style.position = "absolute";
                 towardsButton.style.left = 0;
                 towardsButton.style.backgroundColor = "red";
+                towardsButton.name = "towards";
                 oppositeButton.style.width = "50%";
                 oppositeButton.style.height = "100%";
                 oppositeButton.style.position = "absolute";
                 oppositeButton.style.right = 0;
+                oppositeButton.name = "opposite";
                 //todo from properties
                 oppositeButton.style.backgroundColor = "orange";
-
-                var towardsContext = towardsButton.getContext("2d");
-//                towardsContext.lineTo()
 
                 buttons.appendChild(towardsButton);
                 buttons.appendChild(oppositeButton);
                 hSplitter.appendChild(buttons);
+                this.northArrow = towardsButton;
+                this.southArrow = oppositeButton;
             }
         },
         _addVCanvas: function(vSplitter) {
@@ -270,6 +272,7 @@
                 buttons.style.position = "absolute";
                 buttons.style.top = "10%";
                 buttons.style.width = "100%";
+                //todo from properties
                 buttons.style.height = "30px";
 
                 var towardsButton = document.createElement("canvas");
@@ -279,18 +282,23 @@
                 towardsButton.style.height = "50%";
                 towardsButton.style.position = "absolute";
                 towardsButton.style.top = 0;
+                //todo from properties
                 towardsButton.style.backgroundColor = "red";
+                towardsButton.name = "towards";
                 oppositeButton.style.width = "100%";
                 oppositeButton.style.height = "50%";
                 oppositeButton.style.position = "absolute";
                 oppositeButton.style.bottom = 0;
                 //todo from properties
                 oppositeButton.style.backgroundColor = "orange";
+                oppositeButton.name = "opposite";
 
                 buttons.appendChild(towardsButton);
                 buttons.appendChild(oppositeButton);
 
                 vSplitter.appendChild(buttons);
+                this.westArrow = towardsButton;
+                this.eastArrow = oppositeButton;
             }
         }
     };
@@ -874,13 +882,96 @@
             }
         });
     };
+    JsSplitter.SplittedArea.ArrowRenderer = {
+        _initState: function(canvas) {
+            this.width = canvas.clientWidth;
+            this.height = canvas.clientHeight;
+            this.context = canvas.getContext("2d");
+            //todo from Properties
+            this.context.strokeStyle = "green";
+            this.context.lineWidth = 2;
+        },
+        drawNorth: function(/**canvas*/ canvas) {
+            if (canvas.getContext) {
+                this._initState(canvas);
+                this.context.moveTo(0, this.height);
+                this.context.lineTo(this.width / 2, 0);
+                this.context.lineTo(this.width, this.height);
+                this.context.stroke();
+            }
+        },
+        drawSouth: function(/**canvas*/ canvas) {
+            if (canvas.getContext) {
+                this._initState(canvas);
+                this.context.moveTo(0, 0);
+                this.context.lineTo(this.width / 2, this.height);
+                this.context.lineTo(this.width, 0);
+                this.context.stroke();
+            }
+        },
+        drawWest: function(/**canvas*/ canvas) {
+            if (canvas.getContext) {
+                this._initState(canvas);
+                this.context.moveTo(this.width, 0);
+                this.context.lineTo(0, this.height/2);
+                this.context.lineTo(this.width, this.height);
+                this.context.stroke();
+            }
+        },
+        drawEast: function(/**canvas*/ canvas) {
+            if (canvas.getContext) {
+                this._initState(canvas);
+                this.context.moveTo(0, 0);
+                this.context.lineTo(this.width, this.height / 2);
+                this.context.lineTo(0, this.height);
+                this.context.stroke();
+            }
+        }
+    };
     JsSplitter.SplittedArea.prototype.paintArrows = function() {
-        //todo
+        var northButton;
+        var southButton;
+        var westButton;
+        var eastButton;
+        var hButtons = this.hSplitter.children[0];
+        var vButtons = this.vSplitter.children[0];
+        var hSplitterButtons = hButtons.children;
+        var vSplitterButtons = vButtons.children;
+        for(var i = 0; i < hSplitterButtons.length; i++) {
+            if(hSplitterButtons[i].name == "towards"){
+                northButton = hSplitterButtons[i];
+            } else if(hSplitterButtons[i].name == "opposite") {
+                southButton = hSplitterButtons[i];
+            }
+        }
+        for(var i = 0; i < vSplitterButtons.length; i++) {
+            if(vSplitterButtons[i].name == "towards"){
+                westButton = vSplitterButtons[i];
+            } else if(vSplitterButtons[i].name == "opposite") {
+                eastButton = vSplitterButtons[i];
+            }
+        }
+        //we must set width and height properties, and we should
+        //do it here, because we're not aware of hButtons.clientWidth
+        //and hButtons.clientHeight before we draw the sectors
+        northButton.width = hButtons.clientWidth/2;
+        northButton.height = hButtons.clientHeight;
+        southButton.width = hButtons.clientWidth/2;
+        southButton.height = hButtons.clientHeight;
+        westButton.width = vButtons.clientWidth;
+        westButton.height = vButtons.clientHeight/2;
+        eastButton.width = vButtons.clientWidth;
+        eastButton.height = vButtons.clientHeight/2;
+
+        JsSplitter.SplittedArea.ArrowRenderer.drawNorth(northButton);
+        JsSplitter.SplittedArea.ArrowRenderer.drawSouth(southButton);
+        JsSplitter.SplittedArea.ArrowRenderer.drawWest(westButton);
+        JsSplitter.SplittedArea.ArrowRenderer.drawEast(eastButton);
     };
     JsSplitter.SplittedArea.prototype.paint = function() {
         this.paintArrows();
         for (var i = 0; i < this._children.length; i++) {
-            this._children[i].paintArrows();
+            this._children[i].paint();
         }
     };
     JsSplitter.SplittedArea.prototype.disable = function() {
@@ -948,33 +1039,6 @@
         }
     };
 
-    JsSplitter.SplittedArea.prototype.appendChildren = function() {
-        if (this.one) {
-            this.base.appendChild(this.one);
-        }
-        if (this.two) {
-            this.base.appendChild(this.two);
-        }
-        if (this.three) {
-            this.base.appendChild(this.three);
-        }
-        if (this.four) {
-            this.base.appendChild(this.four);
-        }
-        if (this.vSplitter) {
-            this.base.appendChild(this.vSplitter);
-        }
-        if (this.hSplitter) {
-            this.base.appendChild(this.hSplitter);
-        }
-        if (this._children[0]) {
-            this.three.appendChild(this._children[0].base);
-        }
-        for (var i = 0; i < this._children.length; i++) {
-            this._children[i].appendChildren();
-        }
-    };
-
     JsSplitter.SplittedArea.prototype.build = function() {
         this.attachBaseListeners();
         this.draw();
@@ -989,4 +1053,7 @@
 
     JsSplitter.H = 1;
     JsSplitter.V = 2;
+
+    JsSplitter.T = 1;
+    JsSplitter.O = 2;
 })();
