@@ -20,6 +20,7 @@
         hSplitterColor : "#000000",
         hLimit: 10, //px
         vLimit: 10,  //px
+        animationPlaying: false,
 
         disableVDrag: function () {
 //                    console.log("disabling drag")
@@ -204,36 +205,40 @@
         prepareHSplitter: function(area, hSplitter) {
             hSplitter.style.cursor = "n-resize";
             this._addHHandler(area, hSplitter);
-            this._addHCanvas(hSplitter);
+            this._addHCanvas(area, hSplitter);
         },
 
         prepareVSplitter: function(area, vSplitter) {
             vSplitter.style.cursor = "w-resize";
             this._addVHandler(area, vSplitter);
-            this._addVCanvas(vSplitter);
+            this._addVCanvas(area, vSplitter);
         },
 
         _addHHandler: function(area, hSplitter) {
             EventUtil.addHandler(hSplitter, "mousedown", function(event) {
-                event = EventUtil.getEvent(event);
-                area.dragger.currentY = event.clientY;
-                JsSplitter.enableVDrag();
-                JsSplitter.draggableArea = area;
-                //in firefox, we have to prevent default action (dragging) for elements
-                if (event.preventDefault) event.preventDefault();
+                if (! JsSplitter.animationPlaying) {
+                    event = EventUtil.getEvent(event);
+                    area.dragger.currentY = event.clientY;
+                    JsSplitter.enableVDrag();
+                    JsSplitter.draggableArea = area;
+                    //in firefox, we have to prevent default action (dragging) for elements
+                    if (event.preventDefault) event.preventDefault();
+                }
             });
         },
         _addVHandler: function(area, vSplitter) {
             EventUtil.addHandler(vSplitter, "mousedown", function(event) {
-                event = EventUtil.getEvent(event);
-                area.dragger.currentX = event.clientX;
-                JsSplitter.enableHDrag();
-                JsSplitter.draggableArea = area;
-                //in firefox, we have to prevent default action (dragging) for elements
-                if (event.preventDefault) event.preventDefault();
+                if (! JsSplitter.animationPlaying) {
+                    event = EventUtil.getEvent(event);
+                    area.dragger.currentX = event.clientX;
+                    JsSplitter.enableHDrag();
+                    JsSplitter.draggableArea = area;
+                    //in firefox, we have to prevent default action (dragging) for elements
+                    if (event.preventDefault) event.preventDefault();
+                }
             });
         },
-        _addHCanvas: function(hSplitter) {
+        _addHCanvas: function(area, hSplitter) {
             if (hSplitter) {
                 var buttons = document.createElement("div");
                 buttons.style.position = "absolute";
@@ -259,14 +264,58 @@
                 //todo from properties
                 oppositeButton.style.backgroundColor = "orange";
 
+                towardsButton.style.cursor = "Pointer";
+                oppositeButton.style.cursor = "Pointer";
                 buttons.appendChild(towardsButton);
                 buttons.appendChild(oppositeButton);
                 hSplitter.appendChild(buttons);
-                this.northArrow = towardsButton;
-                this.southArrow = oppositeButton;
+                EventUtil.addHandler(towardsButton, "click", function() {
+                    if (! JsSplitter.animationPlaying) {
+                        JsSplitter.animationPlaying = true;
+                        area.dragger.switchDragMode(JsSplitter.V);
+                        var startHeight = area.dragger.towardsElements[0].clientHeight;
+                        area.dragger.currentY = startHeight;
+                        var currentHeight = startHeight - 1;
+                        var interval = setInterval(function() {
+                            if (currentHeight <= JsSplitter.vLimit) {
+                                clearInterval(interval);
+                                JsSplitter.animationPlaying = false;
+                                return;
+                            }
+                            var event = {clientY: currentHeight};
+
+                            area.dragger.drag(event, JsSplitter.vLimit);
+                            area.draw();
+                            //todo from properties
+                            currentHeight = currentHeight - 5;
+                        }, 10);
+                    }
+                });
+                EventUtil.addHandler(oppositeButton, "click", function() {
+                    if (! JsSplitter.animationPlaying) {
+                        JsSplitter.animationPlaying = true;
+                        area.dragger.switchDragMode(JsSplitter.V);
+                        var startHeight = area.dragger.towardsElements[0].clientHeight;
+                        area.dragger.currentY = startHeight;
+                        var currentHeight = startHeight + 1;
+                        var interval = setInterval(function() {
+                            if (currentHeight >= area.base.clientHeight - JsSplitter.vLimit) {
+                                clearInterval(interval);
+                                JsSplitter.animationPlaying = false;
+                                return;
+                            }
+                            var event = {clientY: currentHeight};
+
+                            area.dragger.drag(event, JsSplitter.vLimit);
+                            area.draw();
+                            //todo from properties
+                            currentHeight = currentHeight + 5;
+                        }, 10);
+                    }
+                });
             }
         },
-        _addVCanvas: function(vSplitter) {
+        _addVCanvas: function(area, vSplitter) {
             if (vSplitter) {
                 var buttons = document.createElement("div");
                 buttons.style.position = "absolute";
@@ -293,12 +342,57 @@
                 oppositeButton.style.backgroundColor = "orange";
                 oppositeButton.name = "opposite";
 
+                towardsButton.style.cursor = "Pointer";
+                oppositeButton.style.cursor = "Pointer";
+
                 buttons.appendChild(towardsButton);
                 buttons.appendChild(oppositeButton);
 
                 vSplitter.appendChild(buttons);
-                this.westArrow = towardsButton;
-                this.eastArrow = oppositeButton;
+                EventUtil.addHandler(towardsButton, "click", function() {
+                    if (! JsSplitter.animationPlaying) {
+                        JsSplitter.animationPlaying = true;
+                        area.dragger.switchDragMode(JsSplitter.H);
+                        var startWidth = area.dragger.towardsElements[0].clientWidth;
+                        area.dragger.currentX = startWidth;
+                        var currentWidth = startWidth - 1;
+                        var interval = setInterval(function() {
+                            if (currentWidth <= JsSplitter.vLimit) {
+                                JsSplitter.animationPlaying = false;
+                                clearInterval(interval);
+                                return;
+                            }
+                            var event = {clientX: currentWidth};
+
+                            area.dragger.drag(event, JsSplitter.vLimit);
+                            area.draw();
+                            //todo from properties
+                            currentWidth -= 5;
+                        }, 10);
+                    }
+                });
+                EventUtil.addHandler(oppositeButton, "click", function() {
+                    if (! JsSplitter.animationPlaying) {
+                        JsSplitter.animationPlaying = true;
+                        area.dragger.switchDragMode(JsSplitter.H);
+                        var startWidth = area.dragger.towardsElements[0].clientWidth;
+                        area.dragger.currentX = startWidth;
+                        var currentWidth = startWidth + 1;
+                        var interval = setInterval(function() {
+                            if (currentWidth >= area.base.clientWidth - JsSplitter.vLimit) {
+                                JsSplitter.animationPlaying = false;
+                                clearInterval(interval);
+                                return;
+                            }
+                            var event = {clientX: currentWidth};
+
+                            area.dragger.drag(event, JsSplitter.vLimit);
+                            area.draw();
+                            //todo from properties
+                            currentWidth += 5;
+                        }, 10);
+                    }
+                });
             }
         }
     };
@@ -855,12 +949,14 @@
             if (JsSplitter.VDRAG) {
                 event = EventUtil.getEvent(event);
                 JsSplitter.draggableArea.dragger.switchDragMode(JsSplitter.V);
+                //todo from properties
                 JsSplitter.draggableArea.dragger.drag(event, JsSplitter.vLimit);
                 JsSplitter.draggableArea.draw();
             }
             if (JsSplitter.HDRAG) {
                 event = EventUtil.getEvent(event);
                 JsSplitter.draggableArea.dragger.switchDragMode(JsSplitter.H);
+                //todo from properties
                 JsSplitter.draggableArea.dragger.drag(event, JsSplitter.hLimit);
                 JsSplitter.draggableArea.draw();
             }
