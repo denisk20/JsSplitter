@@ -13,6 +13,12 @@
 
         return result;
     };
+    window._pos = function(/**Number*/ val) {
+        if(isNaN(val)) {
+            throw "Not a number:" + val;
+        }
+        return val > 0? val: 0;
+    };
     //global defaults
     window.JsSplitter = {
         splitterWidth : 8, //px
@@ -21,8 +27,9 @@
         hLimit: 10, //px
         vLimit: 10,  //px
         animation: {
+            disabled: false,
             delay: 10,
-            step: 8,
+            step: 8,//px
             buttonSize: 30,
             towardsButtonColor: "red",
             oppositeButtonColor: "orange"
@@ -87,23 +94,27 @@
     JsSplitter.Dragger = function(/**JsSplitter.SplittedArea*/ area) {
         this.area = area;
     };
+    JsSplitter.Dragger.prototype.getPixelAmountFromProperty = function(element, propertyName) {
+        var amountStr = this.getStyleProperty(element, propertyName);
+        var amount = parseFloat(amountStr.substring(0, amountStr.length - 2));
+        return amount;
+    };
     JsSplitter.Dragger.prototype.drag = function(event, minLimit) {
         var delta = this.getDelta(event);
 
-        var towardsAmountStr = this.getStyleProperty(this.towardsElements[0], this.cssElementPropertyName);
-        var towardsAmount = parseFloat(towardsAmountStr.substring(0, towardsAmountStr.length - 2));
+        var towardsAmount = this.getPixelAmountFromProperty(this.towardsElements[0], this.cssElementPropertyName);
         var newTowardsAmount = towardsAmount - delta;
         if (newTowardsAmount < minLimit) {
             return;
         }
 
-        var oppositeAmountStr = this.getStyleProperty(this.oppositeElements[0], this.cssElementPropertyName);
-        var oppositeAmount = parseFloat(oppositeAmountStr.substring(0, oppositeAmountStr.length - 2));
+        var oppositeAmount = this.getPixelAmountFromProperty(this.oppositeElements[0], this.cssElementPropertyName);
         var newOppositeAmount = oppositeAmount + delta;
         if (newOppositeAmount < minLimit) {
             return;
         }
 
+        //todo appropriate setStyleProperty should be called for nested elements as well
         for (var i = 0; i < this.towardsElements.length; i++) {
             var tElement = this.towardsElements[i];
             this.setStyleProperty(tElement, this.cssElementPropertyName, newTowardsAmount + "px");
@@ -113,9 +124,7 @@
             this.setStyleProperty(oElement, this.cssElementPropertyName, newOppositeAmount + "px")
         }
 
-        var splitterPositionStr = this.getStyleProperty(this.splitter, this.cssSplitterPropertyName);
-
-        var splitterPosition = parseFloat(splitterPositionStr.substring(0, splitterPositionStr.length - 2));
+        var splitterPosition = this.getPixelAmountFromProperty(this.splitter, this.cssSplitterPropertyName);
         var newSplitterPosition = splitterPosition - delta;
 
         this.setStyleProperty(this.splitter, this.cssSplitterPropertyName, newSplitterPosition + "px");
@@ -222,6 +231,11 @@
             } else {
                 this.animation.oppositeButtonColor = JsSplitter.animation.oppositeButtonColor;
             }
+            if(options.animation.disabled) {
+                this.animation.disabled = options.animation.disabled;
+            } else {
+                this.animation.disabled = JsSplitter.animation.disabled;
+            }
         } else {
             this.animation.delay = JsSplitter.animation.delay;
             this.animation.step = JsSplitter.animation.step;
@@ -229,6 +243,7 @@
             this.animation.buttonColor = JsSplitter.animation.buttonColor;
             this.animation.towardsButtonColor = JsSplitter.animation.towardsButtonColor;
             this.animation.oppositeButtonColor = JsSplitter.animation.oppositeButtonColor;
+            this.animation.disabled = JsSplitter.animation.disabled;
         }
         if(options.hLimit) {
             this.hLimit = options.hLimit;
@@ -265,15 +280,15 @@
                     var eventPropertyName;
                     switch (orientation) {
                         case JsSplitter.V :
-                            startValue = dragger.towardsElements[0].clientHeight;
-                            limit = JsSplitter.hLimit;
+                            startValue = dragger.getPixelAmountFromProperty(dragger.towardsElements[0], "height");
+                            limit = dragger.area.vLimit;
                             fullValue = dragger.area.base.clientHeight;
                             eventPropertyName = "clientY";
                             dragger.currentY = startValue;
                             break;
                         case JsSplitter.H :
-                            startValue = dragger.towardsElements[0].clientWidth;
-                            limit = JsSplitter.vLimit;
+                            startValue = dragger.getPixelAmountFromProperty(dragger.towardsElements[0], "width");
+                            limit = dragger.area.hLimit;
                             fullValue = dragger.area.base.clientWidth;
                             eventPropertyName = "clientX";
                             dragger.currentX = startValue;
@@ -281,30 +296,56 @@
                     }
                     var currentValue = startValue;
 
-                    var interval = setInterval(function() {
-                        var shouldStop;
+                    if (! dragger.area.animation.disabled) {
+                        var interval = setInterval(function() {
+                            var shouldStop;
+                            switch (direction) {
+                                case JsSplitter.T:
+                                    currentValue -= dragger.area.animation.step;
+                                    shouldStop = currentValue <= limit;
+                                    break;
+                                case JsSplitter.O:
+                                    currentValue += dragger.area.animation.step;
+                                    shouldStop = currentValue >= fullValue - limit;
+                                    break;
+                            }
+
+                            if (shouldStop) {
+                                clearInterval(interval);
+                                JsSplitter.animationPlaying = false;
+                                if (dragger.area.mouseUpHook) {
+                                    dragger.area.mouseUpHook();
+                                }
+                                return;
+                            }
+                            var event = {};
+                            event[eventPropertyName] = currentValue;
+
+                            dragger.drag(event, limit);
+                            dragger.area.draw();
+                        }, dragger.area.animation.delay);
+                    } else {
+                        var endValue;
                         switch (direction) {
                             case JsSplitter.T:
-                                currentValue -= dragger.area.animation.step;
-                                shouldStop = currentValue <= limit;
+                                endValue = limit + dragger.area.splitterWidth;
                                 break;
                             case JsSplitter.O:
-                                currentValue += dragger.area.animation.step;
-                                shouldStop = currentValue >= fullValue - limit;
+                                endValue = fullValue - limit - dragger.area.splitterWidth;
                                 break;
                         }
-
-                        if (shouldStop) {
-                            clearInterval(interval);
-                            JsSplitter.animationPlaying = false;
-                            return;
-                        }
                         var event = {};
-                        event[eventPropertyName] = currentValue;
+                        event[eventPropertyName] = endValue;
 
                         dragger.drag(event, limit);
+
                         dragger.area.draw();
-                    }, dragger.area.animation.delay);
+                        
+                        JsSplitter.animationPlaying = false;
+                        if (dragger.area.mouseUpHook) {
+                            dragger.area.mouseUpHook();
+                        }
+                    }
                 }
             });
         }
@@ -565,37 +606,37 @@
     };
     JsSplitter.SplittedArea.OrdinalSectorRenderer = {
         drawOne: function(area) {
-            area.one.style.width = (area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
-            area.one.style.height = (area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
+            area.one.style.width = _pos(area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
+            area.one.style.height = _pos(area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
         },
         drawTwo: function(area) {
-            area.two.style.width = (area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
-            area.two.style.height = (area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
+            area.two.style.width = _pos(area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
+            area.two.style.height = _pos(area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
         },
         drawThree: function(area) {
-            area.three.style.width = (area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
-            area.three.style.height = (area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
+            area.three.style.width = _pos(area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
+            area.three.style.height = _pos(area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
         },
         drawFour: function(area) {
-            area.four.style.width = (area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
-            area.four.style.height = (area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
+            area.four.style.width = _pos(area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
+            area.four.style.height = _pos(area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
         }
     };
     JsSplitter.SplittedArea.TallSectorRenderer = {
         drawOne: function(area) {
             area.one.style.width = "100%";
-            area.one.style.height = (area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
+            area.one.style.height = _pos(area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
         },
         drawTwo: function(area) {
-            area.two.style.width = (area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
+            area.two.style.width = _pos(area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
             area.two.style.height = "100%";
         },
         drawThree: function(area) {
             area.three.style.width = "100%";
-            area.three.style.height = (area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
+            area.three.style.height = _pos(area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
         },
         drawFour: function(area) {
-            area.four.style.width = (area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
+            area.four.style.width = _pos(area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
             area.four.style.height = "100%";
         }
     };
@@ -612,11 +653,11 @@
 
     JsSplitter.SplittedArea.BaseSplitterRenderer = {
         drawBaseHSplitter: function(area) {
-            area.hSplitter.style.top = (area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
+            area.hSplitter.style.top = _pos(area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
         },
 
         drawBaseVSplitter: function(area) {
-            area.vSplitter.style.left = (area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
+            area.vSplitter.style.left = _pos(area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
         }
     };
 
@@ -633,24 +674,24 @@
     JsSplitter.SplittedArea.TowardedSplitterRenderer = {
         drawHSplitter: function(area) {
             JsSplitter.SplittedArea.BaseSplitterRenderer.drawBaseHSplitter(area);
-            area.hSplitter.style.width = (area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
+            area.hSplitter.style.width = _pos(area.base.clientWidth * area.dragger.vSplitterShift - area.splitterWidth / 2) + "px";
         },
 
         drawVSplitter: function(area) {
             JsSplitter.SplittedArea.BaseSplitterRenderer.drawBaseVSplitter(area);
-            area.vSplitter.style.height = (area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
+            area.vSplitter.style.height = _pos(area.base.clientHeight * area.dragger.hSplitterShift - area.splitterWidth / 2) + "px";
         }
     };
 
     JsSplitter.SplittedArea.OpposedSplitterRenderer = {
         drawHSplitter: function(area) {
             JsSplitter.SplittedArea.BaseSplitterRenderer.drawBaseHSplitter(area);
-            area.hSplitter.style.width = (area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
+            area.hSplitter.style.width = _pos(area.base.clientWidth * (1 - area.dragger.vSplitterShift) - area.splitterWidth / 2) + "px";
         },
 
         drawVSplitter: function(area) {
             JsSplitter.SplittedArea.BaseSplitterRenderer.drawBaseVSplitter(area);
-            area.vSplitter.style.height = (area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
+            area.vSplitter.style.height = _pos(area.base.clientHeight * (1 - area.dragger.hSplitterShift) - area.splitterWidth / 2) + "px";
         }
     };
 
