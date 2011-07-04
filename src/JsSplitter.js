@@ -22,7 +22,7 @@
         vLimit: 10,  //px
         animation: {
             delay: 10,
-            step: 5,
+            step: 8,
             buttonSize: 30,
             towardsButtonColor: "red",
             oppositeButtonColor: "orange"
@@ -377,6 +377,8 @@
                 hSplitter.appendChild(buttons);
                 JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, JsSplitter.V, JsSplitter.T);
                 JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, JsSplitter.V, JsSplitter.O);
+                area.northArrow = towardsButton;
+                area.southArrow = oppositeButton;
             }
         },
         _addVCanvas: function(area, vSplitter) {
@@ -412,6 +414,8 @@
                 vSplitter.appendChild(buttons);
                 JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, JsSplitter.H, JsSplitter.T);
                 JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, JsSplitter.H, JsSplitter.O);
+                area.westArrow = towardsButton;
+                area.eastArrow = oppositeButton;
             }
         }
     };
@@ -1042,44 +1046,29 @@
         }
     };
     JsSplitter.SplittedArea.prototype.paintArrows = function() {
-        var northButton;
-        var southButton;
-        var westButton;
-        var eastButton;
-        var hButtons = this.hSplitter.children[0];
-        var vButtons = this.vSplitter.children[0];
-        var hSplitterButtons = hButtons.children;
-        var vSplitterButtons = vButtons.children;
-        for(var i = 0; i < hSplitterButtons.length; i++) {
-            if(hSplitterButtons[i].name == "towards"){
-                northButton = hSplitterButtons[i];
-            } else if(hSplitterButtons[i].name == "opposite") {
-                southButton = hSplitterButtons[i];
-            }
-        }
-        for(var i = 0; i < vSplitterButtons.length; i++) {
-            if(vSplitterButtons[i].name == "towards"){
-                westButton = vSplitterButtons[i];
-            } else if(vSplitterButtons[i].name == "opposite") {
-                eastButton = vSplitterButtons[i];
-            }
-        }
         //we must set width and height properties, and we should
         //do it here, because we're not aware of hButtons.clientWidth
         //and hButtons.clientHeight before we draw the sectors
-        northButton.width = hButtons.clientWidth/2;
-        northButton.height = hButtons.clientHeight;
-        southButton.width = hButtons.clientWidth/2;
-        southButton.height = hButtons.clientHeight;
-        westButton.width = vButtons.clientWidth;
-        westButton.height = vButtons.clientHeight/2;
-        eastButton.width = vButtons.clientWidth;
-        eastButton.height = vButtons.clientHeight/2;
+        if(this.hSplitter) {
+            var hButtons = this.hSplitter.children[0];
+            this.northArrow.width = hButtons.clientWidth/2;
+            this.northArrow.height = hButtons.clientHeight;
+            this.southArrow.width = hButtons.clientWidth/2;
+            this.southArrow.height = hButtons.clientHeight;
 
-        JsSplitter.SplittedArea.ArrowRenderer.drawNorth(northButton);
-        JsSplitter.SplittedArea.ArrowRenderer.drawSouth(southButton);
-        JsSplitter.SplittedArea.ArrowRenderer.drawWest(westButton);
-        JsSplitter.SplittedArea.ArrowRenderer.drawEast(eastButton);
+            JsSplitter.SplittedArea.ArrowRenderer.drawNorth(this.northArrow);
+            JsSplitter.SplittedArea.ArrowRenderer.drawSouth(this.southArrow);
+        }
+        if(this.vSplitter) {
+            var vButtons = this.vSplitter.children[0];
+            this.westArrow.width = vButtons.clientWidth;
+            this.westArrow.height = vButtons.clientHeight/2;
+            this.eastArrow.width = vButtons.clientWidth;
+            this.eastArrow.height = vButtons.clientHeight/2;
+
+            JsSplitter.SplittedArea.ArrowRenderer.drawWest(this.westArrow);
+            JsSplitter.SplittedArea.ArrowRenderer.drawEast(this.eastArrow);
+        }
     };
     JsSplitter.SplittedArea.prototype.paint = function() {
         this.paintArrows();
