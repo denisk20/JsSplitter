@@ -270,6 +270,7 @@
     };
     JsSplitter.DragAnimator = {
         addHandlerToArrow: function(arrow, dragger, orientation, direction) {
+            //todo refactor this to remove all switches. Otherwise it's hard to use previous position
             EventUtil.addHandler(arrow, "click", function() {
                 if (! JsSplitter.animationPlaying) {
                     JsSplitter.animationPlaying = true;
@@ -278,6 +279,7 @@
                     var limit;
                     var fullValue;
                     var eventPropertyName;
+                    var previousPosition = dragger.previousPosition;
                     switch (orientation) {
                         case JsSplitter.V :
                             startValue = dragger.getPixelAmountFromProperty(dragger.towardsElements[0], "height");
@@ -302,11 +304,20 @@
                             switch (direction) {
                                 case JsSplitter.T:
                                     currentValue -= dragger.area.animation.step;
-                                    shouldStop = currentValue <= limit;
+                                    if (! previousPosition) {
+                                        shouldStop = currentValue <= limit;
+                                    } else {
+                                        shouldStop = currentValue <= previousPosition
+                                    }
                                     break;
                                 case JsSplitter.O:
                                     currentValue += dragger.area.animation.step;
-                                    shouldStop = currentValue >= fullValue - limit;
+                                    if (! previousPosition) {
+                                        shouldStop = currentValue >= fullValue - limit;
+                                    } else {
+                                        shouldStop = currentValue >= previousPosition;
+                                    }
+
                                     break;
                             }
 
