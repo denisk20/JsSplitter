@@ -14,10 +14,10 @@
         return result;
     };
     window._pos = function(/**Number*/ val) {
-        if(isNaN(val)) {
+        if (isNaN(val)) {
             throw "Not a number:" + val;
         }
-        return val > 0? val: 0;
+        return val > 0 ? val : 0;
     };
     //global defaults
     window.JsSplitter = {
@@ -104,13 +104,13 @@
 
         var towardsAmount = this.getPixelAmountFromProperty(this.towardsElements[0], this.cssElementPropertyName);
         var newTowardsAmount = towardsAmount - delta;
-        if (newTowardsAmount < minLimit) {
+        if (newTowardsAmount < minLimit && (minLimit - newTowardsAmount >= 1)) {
             return;
         }
 
         var oppositeAmount = this.getPixelAmountFromProperty(this.oppositeElements[0], this.cssElementPropertyName);
         var newOppositeAmount = oppositeAmount + delta;
-        if (newOppositeAmount < minLimit) {
+        if (newOppositeAmount < minLimit && (minLimit - newOppositeAmount >= 1)) {
             return;
         }
 
@@ -205,33 +205,33 @@
             this.hSplitterColor = JsSplitter.hSplitterColor;
         }
         this.animation = {};
-        if(options.animation) {
-            if(options.animation.delay) {
+        if (options.animation) {
+            if (options.animation.delay) {
                 this.animation.delay = options.animation.delay;
             } else {
                 this.animation.delay = JsSplitter.animation.delay;
             }
-            if(options.animation.step) {
+            if (options.animation.step) {
                 this.animation.step = options.animation.step;
             } else {
                 this.animation.step = JsSplitter.animation.step;
             }
-            if(options.animation.buttonSize) {
+            if (options.animation.buttonSize) {
                 this.animation.buttonSize = options.animation.buttonSize;
             } else {
                 this.animation.buttonSize = JsSplitter.animation.buttonSize;
             }
-            if(options.animation.towardsButtonColor) {
+            if (options.animation.towardsButtonColor) {
                 this.animation.towardsButtonColor = options.animation.towardsButtonColor;
             } else {
                 this.animation.towardsButtonColor = JsSplitter.animation.towardsButtonColor;
             }
-            if(options.animation.oppositeButtonColor) {
+            if (options.animation.oppositeButtonColor) {
                 this.animation.oppositeButtonColor = options.animation.oppositeButtonColor;
             } else {
                 this.animation.oppositeButtonColor = JsSplitter.animation.oppositeButtonColor;
             }
-            if(options.animation.disabled) {
+            if (options.animation.disabled) {
                 this.animation.disabled = options.animation.disabled;
             } else {
                 this.animation.disabled = JsSplitter.animation.disabled;
@@ -245,12 +245,12 @@
             this.animation.oppositeButtonColor = JsSplitter.animation.oppositeButtonColor;
             this.animation.disabled = JsSplitter.animation.disabled;
         }
-        if(options.hLimit) {
+        if (options.hLimit) {
             this.hLimit = options.hLimit;
         } else {
             this.hLimit = JsSplitter.hLimit;
         }
-        if(options.vLimit) {
+        if (options.vLimit) {
             this.vLimit = options.vLimit;
         } else {
             this.vLimit = JsSplitter.vLimit;
@@ -268,6 +268,34 @@
 
         this.init();
     };
+    JsSplitter.SmoothDragIncrementer = {
+        getIncrement: function(direction, startValue, limit, fullValue, dragger) {
+            var incrementValue;
+            switch (direction) {
+                case JsSplitter.T:
+                    incrementValue = - dragger.area.animation.step;
+                    break;
+                case JsSplitter.O:
+                    incrementValue = dragger.area.animation.step;
+                    break;
+            }
+            return incrementValue;
+        }
+    };
+    JsSplitter.InstanceDragIncrementer = {
+        getIncrement: function(direction, startValue, limit, fullValue, dragger) {
+            var incrementValue;
+            switch (direction) {
+                case JsSplitter.T:
+                    incrementValue = limit - startValue;
+                    break;
+                case JsSplitter.O:
+                    incrementValue = fullValue - limit - dragger.area.splitterWidth - startValue;
+                    break;
+            }
+            return incrementValue;
+        }
+    };
     JsSplitter.DragAnimator = {
         addHandlerToArrow: function(arrow, dragger, orientation, direction) {
             //todo refactor this to remove all switches. Otherwise it's hard to use previous position
@@ -279,84 +307,65 @@
                     var limit;
                     var fullValue;
                     var eventPropertyName;
-                    var previousPosition = dragger.previousPosition;
+                    var incrementer;
+                    //p1
                     switch (orientation) {
                         case JsSplitter.V :
-                            startValue = dragger.getPixelAmountFromProperty(dragger.towardsElements[0], "height");
+                            startValue = (dragger.getPixelAmountFromProperty(dragger.towardsElements[0], "height"));
                             limit = dragger.area.vLimit;
                             fullValue = dragger.area.base.clientHeight;
                             eventPropertyName = "clientY";
                             dragger.currentY = startValue;
                             break;
                         case JsSplitter.H :
-                            startValue = dragger.getPixelAmountFromProperty(dragger.towardsElements[0], "width");
+                            startValue = (dragger.getPixelAmountFromProperty(dragger.towardsElements[0], "width"));
                             limit = dragger.area.hLimit;
                             fullValue = dragger.area.base.clientWidth;
                             eventPropertyName = "clientX";
                             dragger.currentX = startValue;
                             break;
                     }
-                    var currentValue = startValue;
-
+                    //just as needed
+//p2
                     if (! dragger.area.animation.disabled) {
-                        var interval = setInterval(function() {
-                            var shouldStop;
-                            switch (direction) {
-                                case JsSplitter.T:
-                                    currentValue -= dragger.area.animation.step;
-                                    if (! previousPosition) {
-                                        shouldStop = currentValue <= limit;
-                                    } else {
-                                        shouldStop = currentValue <= previousPosition
-                                    }
-                                    break;
-                                case JsSplitter.O:
-                                    currentValue += dragger.area.animation.step;
-                                    if (! previousPosition) {
-                                        shouldStop = currentValue >= fullValue - limit;
-                                    } else {
-                                        shouldStop = currentValue >= previousPosition;
-                                    }
-
-                                    break;
-                            }
-
-                            if (shouldStop) {
-                                clearInterval(interval);
-                                JsSplitter.animationPlaying = false;
-                                if (dragger.area.mouseUpHook) {
-                                    dragger.area.mouseUpHook();
-                                }
-                                return;
-                            }
-                            var event = {};
-                            event[eventPropertyName] = currentValue;
-
-                            dragger.drag(event, limit);
-                            dragger.area.draw();
-                        }, dragger.area.animation.delay);
+                        incrementer = JsSplitter.SmoothDragIncrementer;
                     } else {
-                        var endValue;
+                        incrementer = JsSplitter.InstanceDragIncrementer;
+                    }
+                    var increment = incrementer.getIncrement(direction, startValue, limit, fullValue, dragger);
+                    var smallNumber = 0.001;
+                    if(Math.abs(increment) < smallNumber) {
+                        JsSplitter.animationPlaying = false;
+                        return;
+                    }
+                    var currentValue = startValue + increment;
+                    var interval = setInterval(function() {
+                        //p3
+                        var shouldStop;
                         switch (direction) {
                             case JsSplitter.T:
-                                endValue = limit + dragger.area.splitterWidth;
+//                                currentValue -= dragger.area.animation.step;
+                                shouldStop = currentValue < limit;
                                 break;
                             case JsSplitter.O:
-                                endValue = fullValue - limit - dragger.area.splitterWidth;
+//                                currentValue += dragger.area.animation.step;
+                                shouldStop = currentValue > fullValue - limit - dragger.area.splitterWidth;
                                 break;
                         }
-                        var event = {};
-                        event[eventPropertyName] = endValue;
-
-                        dragger.drag(event, limit);
-
-                        dragger.area.draw();
-                        
-                        JsSplitter.animationPlaying = false;
-                        if (dragger.area.mouseUpHook) {
-                            dragger.area.mouseUpHook();
+                        if (shouldStop) {
+                            clearInterval(interval);
+                            JsSplitter.animationPlaying = false;
+                            if (dragger.area.mouseUpHook) {
+                                dragger.area.mouseUpHook();
+                            }
+                            return;
                         }
-                    }
+                        var event = {};
+                        event[eventPropertyName] = currentValue;
+                        dragger.drag(event, limit);
+                        dragger.area.draw();
+                        currentValue += increment;
+                    }, dragger.area.animation.delay);
                 }
             });
         }
@@ -718,14 +727,14 @@
             var result;
             if (options.one && options.two && options.three && options.four) {
                 result = factory.fourAreas();
-            } else if(options.one && ! options.two && options.three && options.four) {
+            } else if (options.one && ! options.two && options.three && options.four) {
                 result = factory.bigTop();
-            } else if(options.one && options.two && ! options.three && options.four) {
+            } else if (options.one && options.two && ! options.three && options.four) {
                 result = factory.bigRight();
-            } else if(options.one && ! options.two && options.three && ! options.four) {
+            } else if (options.one && ! options.two && options.three && ! options.four) {
                 result = factory.horizontalSplit();
             }
-        //todo add the rest of cases
+            //todo add the rest of cases
             return result;
         }
     };
@@ -792,7 +801,7 @@
         //todo add the rest of cases
     };
     JsSplitter.SplittedArea.DraggerFactory = {
-        _buildDragger: function(){
+        _buildDragger: function() {
             var dragger = new JsSplitter.Dragger();
             return dragger;
         },
@@ -916,16 +925,16 @@
             four: this.four
         };
         var sectorBuilders = JsSplitter.SplittedArea.GenericFactory.build(
-            sectors,
-            JsSplitter.SplittedArea.SectorBuildersFactory
+                sectors,
+                JsSplitter.SplittedArea.SectorBuildersFactory
         );
         var splitterBuilders = JsSplitter.SplittedArea.GenericFactory.build(
-            sectors,
-            JsSplitter.SplittedArea.SplitterBuildersFactory
+                sectors,
+                JsSplitter.SplittedArea.SplitterBuildersFactory
         );
         var dragger = JsSplitter.SplittedArea.GenericFactory.build(
-            sectors,
-            JsSplitter.SplittedArea.DraggerFactory
+                sectors,
+                JsSplitter.SplittedArea.DraggerFactory
         );
         dragger.area = this;
         dragger.hSplitterShift = this.initialHSplitterShift;
@@ -933,8 +942,8 @@
         this.dragger = dragger;
 
         var sectorRenderers = JsSplitter.SplittedArea.GenericFactory.build(
-            sectors,
-            JsSplitter.SplittedArea.SectorRendererFactory
+                sectors,
+                JsSplitter.SplittedArea.SectorRendererFactory
         );
         this.drawOne = sectorRenderers.oneRenderer.drawOne;
         this.drawTwo = sectorRenderers.twoRenderer.drawTwo;
@@ -942,8 +951,8 @@
         this.drawFour = sectorRenderers.fourRenderer.drawFour;
 
         var splitterRenderers = JsSplitter.SplittedArea.GenericFactory.build(
-            sectors,
-            JsSplitter.SplittedArea.SplitterRendererFactory
+                sectors,
+                JsSplitter.SplittedArea.SplitterRendererFactory
         );
         this.drawHSplitter = splitterRenderers.hSplitterRenderer.drawHSplitter;
         this.drawVSplitter = splitterRenderers.vSplitterRenderer.drawVSplitter;
@@ -1082,7 +1091,7 @@
             if (canvas.getContext) {
                 this._initState(canvas);
                 this.context.moveTo(this.width, 0);
-                this.context.lineTo(0, this.height/2);
+                this.context.lineTo(0, this.height / 2);
                 this.context.lineTo(this.width, this.height);
                 this.context.stroke();
             }
@@ -1101,22 +1110,22 @@
         //we must set width and height properties, and we should
         //do it here, because we're not aware of hButtons.clientWidth
         //and hButtons.clientHeight before we draw the sectors
-        if(this.hSplitter) {
+        if (this.hSplitter) {
             var hButtons = this.hSplitter.children[0];
-            this.northArrow.width = hButtons.clientWidth/2;
+            this.northArrow.width = hButtons.clientWidth / 2;
             this.northArrow.height = hButtons.clientHeight;
-            this.southArrow.width = hButtons.clientWidth/2;
+            this.southArrow.width = hButtons.clientWidth / 2;
             this.southArrow.height = hButtons.clientHeight;
 
             JsSplitter.SplittedArea.ArrowRenderer.drawNorth(this.northArrow);
             JsSplitter.SplittedArea.ArrowRenderer.drawSouth(this.southArrow);
         }
-        if(this.vSplitter) {
+        if (this.vSplitter) {
             var vButtons = this.vSplitter.children[0];
             this.westArrow.width = vButtons.clientWidth;
-            this.westArrow.height = vButtons.clientHeight/2;
+            this.westArrow.height = vButtons.clientHeight / 2;
             this.eastArrow.width = vButtons.clientWidth;
-            this.eastArrow.height = vButtons.clientHeight/2;
+            this.eastArrow.height = vButtons.clientHeight / 2;
 
             JsSplitter.SplittedArea.ArrowRenderer.drawWest(this.westArrow);
             JsSplitter.SplittedArea.ArrowRenderer.drawEast(this.eastArrow);
