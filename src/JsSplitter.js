@@ -34,6 +34,7 @@
             towardsButtonColor: "red",
             oppositeButtonColor: "orange"
         },
+        smallNumber: 0.001,
         animationPlaying: false,
 
         disableVDrag: function () {
@@ -98,6 +99,12 @@
         var amountStr = this.getStyleProperty(element, propertyName);
         var amount = parseFloat(amountStr.substring(0, amountStr.length - 2));
         return amount;
+    };
+    JsSplitter.Dragger.prototype.saveCurrentXMiddleValue = function() {
+        this.currentXMiddleValue = this.getPixelAmountFromProperty(this.towardsElements[0], "width");
+    };
+    JsSplitter.Dragger.prototype.saveCurrentYMiddleValue = function() {
+        this.currentYMiddleValue = this.getPixelAmountFromProperty(this.towardsElements[0], "height");
     };
     JsSplitter.Dragger.prototype.drag = function(event, minLimit) {
         var delta = this.getDelta(event);
@@ -265,7 +272,7 @@
                 tile.parentNode.removeChild(tile);
             }
         }
-        //todo is this a good place for this?
+        //todo is it a good place for this?
         if (! this.animation.disabled) {
             this.incrementer = JsSplitter.SmoothDragIncrementer;
         } else {
@@ -286,26 +293,101 @@
             return incrementValue;
         }
     };
+    //todo what's this for?
     JsSplitter.ArrowController = function(dragger, northArrow, southArrow, westArrow, eastArrow) {
         this.northArrow = northArrow;
         this.southArrow = southArrow;
         this.westArrow = westArrow;
         this.eastArrow = eastArrow;
         this.dragger = dragger;
-
     };
+    JsSplitter.TowardedArrowState = {
+        getTowardsInstanceIncrement: function() {
+            return {increment: 0, newState: JsSplitter.TowardedArrowState};
+        },
+        getOppositeInstanceIncrement: function(orientedDraggingController) {
+            var currentTowardsValue = orientedDraggingController.startTowardsAmount;
+            var middleValue = orientedDraggingController.middleValue;
+            return {increment: middleValue - currentTowardsValue, newState: JsSplitter.MiddleArrowState};
+        },
+        getTowardsSmoothIncrement: function() {
+            return {increment: 0, newState: JsSplitter.TowardedArrowState};
+        },
+        getOppositeSmoothIncrement: function(orientedDraggingController) {
+            return {increment:orientedDraggingController.dragger.area.animation.step, newState: JsSplitter.MiddleArrowState};
+        },
+        shouldStopWhileMovingTowards: function() {
+            return true;
+        },
+        shouldStopWhileMovingOpposite: function(currentValue, orientedDraggingController) {
+            return currentValue > orientedDraggingController.middleValue && (currentValue - orientedDraggingController.middleValue > JsSplitter.smallNumber);
+        }
+    };
+    JsSplitter.MiddleArrowState = {
+        getTowardsInstanceIncrement: function(orientedDraggingController) {
+            var currentTowardsValue = orientedDraggingController.startTowardsAmount;
+            return {increment: -currentTowardsValue + orientedDraggingController.minLimit, newState: JsSplitter.TowardedArrowState};
+        },
+        getOppositeInstanceIncrement: function(orientedDraggingController) {
+            var currentOppositeValue = orientedDraggingController.startOppositeAmount;
+            return {increment: currentOppositeValue - orientedDraggingController.minLimit, newState: JsSplitter.OppositeArrowState};
+        },
+        getTowardsSmoothIncrement: function(orientedDraggingController) {
+            return {increment: -orientedDraggingController.dragger.area.animation.step, newState: JsSplitter.TowardedArrowState};
+        },
+        getOppositeSmoothIncrement: function(orientedDraggingController) {
+            return {increment:orientedDraggingController.dragger.area.animation.step, newState: JsSplitter.OppositeArrowState};
+        },
+        shouldStopWhileMovingTowards: function(currentValue, orientedDraggingController) {
+            return currentValue < orientedDraggingController.minLimit && (orientedDraggingController.minLimit - currentValue > JsSplitter.smallNumber);
+        },
+        shouldStopWhileMovingOpposite: function(currentValue, orientedDraggingController) {
+            var amount = orientedDraggingController.fullAreaValue - orientedDraggingController.minLimit - orientedDraggingController.dragger.area.splitterWidth;
+            return currentValue > amount && (currentValue - amount > JsSplitter.smallNumber);
+        }
+    };
+    JsSplitter.OppositeArrowState = {
+        getTowardsInstanceIncrement: function(orientedDraggingController) {
+            var currentTowardsValue = orientedDraggingController.startTowardsAmount;
+            var middleValue = orientedDraggingController.middleValue;
+            return {increment: middleValue - currentTowardsValue /*+ orientedDraggingController.minLimit*/, newState: JsSplitter.MiddleArrowState};
+        },
+        getOppositeInstanceIncrement: function() {
+            return {increment: 0, newState: JsSplitter.OppositeArrowState};
+        },
+        getTowardsSmoothIncrement: function(orientedDraggingController) {
+            return {increment: -orientedDraggingController.dragger.area.animation.step, newState: JsSplitter.MiddleArrowState};
+        },
+        getOppositeSmoothIncrement: function() {
+            return {increment:0, newState: JsSplitter.OppositeArrowState};
+        },
+        shouldStopWhileMovingTowards: function(currentValue, orientedDraggingController) {
+            return currentValue < orientedDraggingController.middleValue && (orientedDraggingController.middleValue - currentValue > JsSplitter.smallNumber);
+        },
+        shouldStopWhileMovingOpposite: function() {
+            return true;
+        }
+    };
+
     JsSplitter.TowardsDraggingController = function(orientedDraggingController) {
         this.orientedDraggingController = orientedDraggingController;
         this.direction = JsSplitter.T;
     };
     JsSplitter.TowardsDraggingController.prototype.shouldStop = function(currentValue){
-        return currentValue < this.orientedDraggingController.minLimit;
+        var shouldStop = this.orientedDraggingController.arrowState.shouldStopWhileMovingTowards(currentValue, this.orientedDraggingController);
+        return shouldStop;
     };
     JsSplitter.TowardsDraggingController.prototype.getSmoothIncrement = function(){
-        return -this.orientedDraggingController.dragger.area.animation.step;
+        var stateChange = this.orientedDraggingController.arrowState.getTowardsSmoothIncrement(this.orientedDraggingController);
+        this.orientedDraggingController.nextState = stateChange.newState;
+        return stateChange.increment;
     };
-    JsSplitter.TowardsDraggingController.prototype.getInstanceIncrement = function(){
-        return this.orientedDraggingController.minLimit - this.orientedDraggingController.startAmount;
+    JsSplitter.TowardsDraggingController.prototype.getInstanceIncrement = function() {
+        var stateChange = this.orientedDraggingController.arrowState.getTowardsInstanceIncrement(this.orientedDraggingController);
+        this.orientedDraggingController.nextState = stateChange.newState;
+        var increment = stateChange.increment;
+//        var increment = this.orientedDraggingController.minLimit - this.orientedDraggingController.startTowardsAmount;
+        return increment;
     };
 
     JsSplitter.OppositeDraggingController = function(orientedDraggingController) {
@@ -313,13 +395,20 @@
         this.direction = JsSplitter.O;
     };
     JsSplitter.OppositeDraggingController.prototype.shouldStop = function(currentValue){
-        return currentValue > this.orientedDraggingController.fullAreaValue - this.orientedDraggingController.minLimit - this.orientedDraggingController.dragger.area.splitterWidth;
+        var shouldStop = this.orientedDraggingController.arrowState.shouldStopWhileMovingOpposite(currentValue, this.orientedDraggingController);
+        return shouldStop;
     };
     JsSplitter.OppositeDraggingController.prototype.getSmoothIncrement = function(){
-        return this.orientedDraggingController.dragger.area.animation.step;
+        var stateChange = this.orientedDraggingController.arrowState.getOppositeSmoothIncrement(this.orientedDraggingController);
+        this.orientedDraggingController.nextState = stateChange.newState;
+        return stateChange.increment;
     };
     JsSplitter.OppositeDraggingController.prototype.getInstanceIncrement = function(){
-        return this.orientedDraggingController.fullAreaValue - this.orientedDraggingController.minLimit - this.orientedDraggingController.dragger.area.splitterWidth - this.orientedDraggingController.startAmount
+        var stateChange = this.orientedDraggingController.arrowState.getOppositeInstanceIncrement(this.orientedDraggingController);
+        this.orientedDraggingController.nextState = stateChange.newState;
+        var increment = stateChange.increment;
+//        var increment = this.orientedDraggingController.fullAreaValue - this.orientedDraggingController.minLimit - this.orientedDraggingController.dragger.area.splitterWidth - this.orientedDraggingController.startTowardsAmount;
+        return increment;
     };
 
     JsSplitter.HorizontalDraggingController = function(dragger) {
@@ -331,10 +420,13 @@
 
     JsSplitter.HorizontalDraggingController.prototype.init = function() {
         this.dragger.switchDragMode(this.draggingMode);
-        this.startAmount = (this.dragger.getPixelAmountFromProperty(this.dragger.towardsElements[0], "width"));
+        this.startTowardsAmount = (this.dragger.getPixelAmountFromProperty(this.dragger.towardsElements[0], "width"));
+        this.startOppositeAmount = (this.dragger.getPixelAmountFromProperty(this.dragger.oppositeElements[0], "width"));
+        //changed while appropriate dragging only. This is the value of towarded splitter's element
+        this.middleValue = this.dragger.currentXMiddleValue;
         this.minLimit = this.dragger.area.hLimit;
         this.fullAreaValue = this.dragger.area.base.clientWidth;
-        this.dragger[this.draggerCurrentProperty] = this.startAmount;
+        this.dragger[this.draggerCurrentProperty] = this.startTowardsAmount;
     };
 
     JsSplitter.VerticalDraggingController = function(dragger) {
@@ -346,12 +438,13 @@
 
     JsSplitter.VerticalDraggingController.prototype.init = function() {
         this.dragger.switchDragMode(this.draggingMode);
-        this.startAmount = (this.dragger.getPixelAmountFromProperty(this.dragger.towardsElements[0], "height"));
+        this.startTowardsAmount = (this.dragger.getPixelAmountFromProperty(this.dragger.towardsElements[0], "height"));
+        this.startOppositeAmount = (this.dragger.getPixelAmountFromProperty(this.dragger.oppositeElements[0], "height"));
+        this.middleValue = this.dragger.currentYMiddleValue;
         this.minLimit = this.dragger.area.vLimit;
         this.fullAreaValue = this.dragger.area.base.clientHeight;
-        this.dragger[this.draggerCurrentProperty] = this.startAmount;
+        this.dragger[this.draggerCurrentProperty] = this.startTowardsAmount;
     };
-
 
     JsSplitter.DragAnimator = {
         addHandlerToArrow: function(arrow, dragger, orientationController, directionController) {
@@ -360,17 +453,18 @@
                     JsSplitter.animationPlaying = true;
                     orientationController.init();
                     var increment = dragger.area.incrementer.getIncrementValue(directionController);
-                    var smallNumber = 0.001;
-                    if(Math.abs(increment) < smallNumber) {
+                    if(Math.abs(increment) < 1) {
                         JsSplitter.animationPlaying = false;
+                        orientationController.arrowState = orientationController.nextState;
                         return;
                     }
-                    var currentValue = orientationController.startAmount + increment;
+                    var currentValue = orientationController.startTowardsAmount + increment;
                     var interval = setInterval(function() {
                         var shouldStop = directionController.shouldStop(currentValue);
                         if (shouldStop) {
                             clearInterval(interval);
                             JsSplitter.animationPlaying = false;
+                            orientationController.arrowState = orientationController.nextState;
                             if (dragger.area.mouseUpHook) {
                                 dragger.area.mouseUpHook();
                             }
@@ -453,8 +547,10 @@
                 buttons.appendChild(oppositeButton);
                 hSplitter.appendChild(buttons);
                 var draggingController = new JsSplitter.VerticalDraggingController(area.dragger);
+                area.vDragController = draggingController;
                 var towardsController = new JsSplitter.TowardsDraggingController(draggingController);
                 var oppositeController = new JsSplitter.OppositeDraggingController(draggingController);
+                draggingController.arrowState = JsSplitter.MiddleArrowState;
                 JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, draggingController, towardsController);
                 JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, draggingController, oppositeController);
                 area.northArrow = towardsButton;
@@ -493,8 +589,10 @@
 
                 vSplitter.appendChild(buttons);
                 var draggingController = new JsSplitter.HorizontalDraggingController(area.dragger);
+                area.hDragController = draggingController;
                 var towardsController = new JsSplitter.TowardsDraggingController(draggingController);
                 var oppositeController = new JsSplitter.OppositeDraggingController(draggingController);
+                draggingController.arrowState = JsSplitter.MiddleArrowState;
                 JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, draggingController, towardsController);
                 JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, draggingController, oppositeController);
                 area.westArrow = towardsButton;
@@ -1055,13 +1153,17 @@
             if (JsSplitter.VDRAG) {
                 event = EventUtil.getEvent(event);
                 JsSplitter.draggableArea.dragger.switchDragMode(JsSplitter.V);
-                JsSplitter.draggableArea.dragger.drag(event, this.vLimit);
+                JsSplitter.draggableArea.dragger.drag(event, JsSplitter.draggableArea.vLimit);
+                JsSplitter.draggableArea.saveMiddleValues();
+                JsSplitter.draggableArea.vDragController.arrowState = JsSplitter.MiddleArrowState;
                 JsSplitter.draggableArea.draw();
             }
             if (JsSplitter.HDRAG) {
                 event = EventUtil.getEvent(event);
                 JsSplitter.draggableArea.dragger.switchDragMode(JsSplitter.H);
-                JsSplitter.draggableArea.dragger.drag(event, this.hLimit);
+                JsSplitter.draggableArea.dragger.drag(event, JsSplitter.draggableArea.hLimit);
+                JsSplitter.draggableArea.saveMiddleValues();
+                JsSplitter.draggableArea.hDragController.arrowState = JsSplitter.MiddleArrowState;
                 JsSplitter.draggableArea.draw();
             }
         });
@@ -1224,9 +1326,21 @@
         }
     };
 
+    JsSplitter.SplittedArea.prototype.saveMiddleValues = function() {
+        this.dragger.switchDragMode(JsSplitter.H);
+        this.dragger.saveCurrentXMiddleValue();
+        this.dragger.switchDragMode(JsSplitter.V);
+        this.dragger.saveCurrentYMiddleValue();
+
+        for (var i = 0; i < this._children.length; i++) {
+            this._children[i].saveMiddleValues();
+        }
+
+    };
     JsSplitter.SplittedArea.prototype.build = function() {
         this.attachBaseListeners();
         this.draw();
+        this.saveMiddleValues();
         //by that time all shapes are ready. We can rely on clientWidth and clientHeight to do some canvas paintings
         this.paint();
     };
