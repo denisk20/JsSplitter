@@ -265,93 +265,109 @@
                 tile.parentNode.removeChild(tile);
             }
         }
+        //todo is this a good place for this?
+        if (! this.animation.disabled) {
+            this.incrementer = JsSplitter.SmoothDragIncrementer;
+        } else {
+            this.incrementer = JsSplitter.InstanceDragIncrementer;
+        }
 
         this.init();
     };
     JsSplitter.SmoothDragIncrementer = {
-        getIncrement: function(direction, startValue, limit, fullValue, dragger) {
-            var incrementValue;
-            switch (direction) {
-                case JsSplitter.T:
-                    incrementValue = - dragger.area.animation.step;
-                    break;
-                case JsSplitter.O:
-                    incrementValue = dragger.area.animation.step;
-                    break;
-            }
+        getIncrementValue: function(directionController) {
+            var incrementValue = directionController.getSmoothIncrement();
             return incrementValue;
         }
     };
     JsSplitter.InstanceDragIncrementer = {
-        getIncrement: function(direction, startValue, limit, fullValue, dragger) {
-            var incrementValue;
-            switch (direction) {
-                case JsSplitter.T:
-                    incrementValue = limit - startValue;
-                    break;
-                case JsSplitter.O:
-                    incrementValue = fullValue - limit - dragger.area.splitterWidth - startValue;
-                    break;
-            }
+        getIncrementValue: function(directionController) {
+            var incrementValue = directionController.getInstanceIncrement();
             return incrementValue;
         }
     };
+    JsSplitter.ArrowController = function(dragger, northArrow, southArrow, westArrow, eastArrow) {
+        this.northArrow = northArrow;
+        this.southArrow = southArrow;
+        this.westArrow = westArrow;
+        this.eastArrow = eastArrow;
+        this.dragger = dragger;
+
+    };
+    JsSplitter.TowardsDraggingController = function(orientedDraggingController) {
+        this.orientedDraggingController = orientedDraggingController;
+        this.direction = JsSplitter.T;
+    };
+    JsSplitter.TowardsDraggingController.prototype.shouldStop = function(currentValue){
+        return currentValue < this.orientedDraggingController.minLimit;
+    };
+    JsSplitter.TowardsDraggingController.prototype.getSmoothIncrement = function(){
+        return -this.orientedDraggingController.dragger.area.animation.step;
+    };
+    JsSplitter.TowardsDraggingController.prototype.getInstanceIncrement = function(){
+        return this.orientedDraggingController.minLimit - this.orientedDraggingController.startAmount;
+    };
+
+    JsSplitter.OppositeDraggingController = function(orientedDraggingController) {
+        this.orientedDraggingController = orientedDraggingController;
+        this.direction = JsSplitter.O;
+    };
+    JsSplitter.OppositeDraggingController.prototype.shouldStop = function(currentValue){
+        return currentValue > this.orientedDraggingController.fullAreaValue - this.orientedDraggingController.minLimit - this.orientedDraggingController.dragger.area.splitterWidth;
+    };
+    JsSplitter.OppositeDraggingController.prototype.getSmoothIncrement = function(){
+        return this.orientedDraggingController.dragger.area.animation.step;
+    };
+    JsSplitter.OppositeDraggingController.prototype.getInstanceIncrement = function(){
+        return this.orientedDraggingController.fullAreaValue - this.orientedDraggingController.minLimit - this.orientedDraggingController.dragger.area.splitterWidth - this.orientedDraggingController.startAmount
+    };
+
+    JsSplitter.HorizontalDraggingController = function(dragger) {
+        this.dragger = dragger;
+        this.draggingMode = JsSplitter.H;
+        this.eventPropertyName = "clientX";
+        this.draggerCurrentProperty = "currentX";
+    };
+
+    JsSplitter.HorizontalDraggingController.prototype.init = function() {
+        this.dragger.switchDragMode(this.draggingMode);
+        this.startAmount = (this.dragger.getPixelAmountFromProperty(this.dragger.towardsElements[0], "width"));
+        this.minLimit = this.dragger.area.hLimit;
+        this.fullAreaValue = this.dragger.area.base.clientWidth;
+        this.dragger[this.draggerCurrentProperty] = this.startAmount;
+    };
+
+    JsSplitter.VerticalDraggingController = function(dragger) {
+        this.dragger = dragger;
+        this.draggingMode = JsSplitter.V;
+        this.eventPropertyName = "clientY";
+        this.draggerCurrentProperty = "currentY";
+    };
+
+    JsSplitter.VerticalDraggingController.prototype.init = function() {
+        this.dragger.switchDragMode(this.draggingMode);
+        this.startAmount = (this.dragger.getPixelAmountFromProperty(this.dragger.towardsElements[0], "height"));
+        this.minLimit = this.dragger.area.vLimit;
+        this.fullAreaValue = this.dragger.area.base.clientHeight;
+        this.dragger[this.draggerCurrentProperty] = this.startAmount;
+    };
+
+
     JsSplitter.DragAnimator = {
-        addHandlerToArrow: function(arrow, dragger, orientation, direction) {
-            //todo refactor this to remove all switches. Otherwise it's hard to use previous position
+        addHandlerToArrow: function(arrow, dragger, orientationController, directionController) {
             EventUtil.addHandler(arrow, "click", function() {
                 if (! JsSplitter.animationPlaying) {
                     JsSplitter.animationPlaying = true;
-                    dragger.switchDragMode(orientation);
-                    var startValue;
-                    var limit;
-                    var fullValue;
-                    var eventPropertyName;
-                    var incrementer;
-                    //p1
-                    switch (orientation) {
-                        case JsSplitter.V :
-                            startValue = (dragger.getPixelAmountFromProperty(dragger.towardsElements[0], "height"));
-                            limit = dragger.area.vLimit;
-                            fullValue = dragger.area.base.clientHeight;
-                            eventPropertyName = "clientY";
-                            dragger.currentY = startValue;
-                            break;
-                        case JsSplitter.H :
-                            startValue = (dragger.getPixelAmountFromProperty(dragger.towardsElements[0], "width"));
-                            limit = dragger.area.hLimit;
-                            fullValue = dragger.area.base.clientWidth;
-                            eventPropertyName = "clientX";
-                            dragger.currentX = startValue;
-                            break;
-                    }
-                    //just as needed
-//p2
-                    if (! dragger.area.animation.disabled) {
-                        incrementer = JsSplitter.SmoothDragIncrementer;
-                    } else {
-                        incrementer = JsSplitter.InstanceDragIncrementer;
-                    }
-                    var increment = incrementer.getIncrement(direction, startValue, limit, fullValue, dragger);
+                    orientationController.init();
+                    var increment = dragger.area.incrementer.getIncrementValue(directionController);
                     var smallNumber = 0.001;
                     if(Math.abs(increment) < smallNumber) {
                         JsSplitter.animationPlaying = false;
                         return;
                     }
-                    var currentValue = startValue + increment;
+                    var currentValue = orientationController.startAmount + increment;
                     var interval = setInterval(function() {
-                        //p3
-                        var shouldStop;
-                        switch (direction) {
-                            case JsSplitter.T:
-//                                currentValue -= dragger.area.animation.step;
-                                shouldStop = currentValue < limit;
-                                break;
-                            case JsSplitter.O:
-//                                currentValue += dragger.area.animation.step;
-                                shouldStop = currentValue > fullValue - limit - dragger.area.splitterWidth;
-                                break;
-                        }
+                        var shouldStop = directionController.shouldStop(currentValue);
                         if (shouldStop) {
                             clearInterval(interval);
                             JsSplitter.animationPlaying = false;
@@ -361,8 +377,8 @@
                             return;
                         }
                         var event = {};
-                        event[eventPropertyName] = currentValue;
-                        dragger.drag(event, limit);
+                        event[orientationController.eventPropertyName] = currentValue;
+                        dragger.drag(event, orientationController.minLimit);
                         dragger.area.draw();
                         currentValue += increment;
                     }, dragger.area.animation.delay);
@@ -436,8 +452,11 @@
                 buttons.appendChild(towardsButton);
                 buttons.appendChild(oppositeButton);
                 hSplitter.appendChild(buttons);
-                JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, JsSplitter.V, JsSplitter.T);
-                JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, JsSplitter.V, JsSplitter.O);
+                var draggingController = new JsSplitter.VerticalDraggingController(area.dragger);
+                var towardsController = new JsSplitter.TowardsDraggingController(draggingController);
+                var oppositeController = new JsSplitter.OppositeDraggingController(draggingController);
+                JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, draggingController, towardsController);
+                JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, draggingController, oppositeController);
                 area.northArrow = towardsButton;
                 area.southArrow = oppositeButton;
             }
@@ -473,8 +492,11 @@
                 buttons.appendChild(oppositeButton);
 
                 vSplitter.appendChild(buttons);
-                JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, JsSplitter.H, JsSplitter.T);
-                JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, JsSplitter.H, JsSplitter.O);
+                var draggingController = new JsSplitter.HorizontalDraggingController(area.dragger);
+                var towardsController = new JsSplitter.TowardsDraggingController(draggingController);
+                var oppositeController = new JsSplitter.OppositeDraggingController(draggingController);
+                JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, draggingController, towardsController);
+                JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, draggingController, oppositeController);
                 area.westArrow = towardsButton;
                 area.eastArrow = oppositeButton;
             }
