@@ -1327,10 +1327,14 @@
     };
 
     JsSplitter.SplittedArea.prototype.saveMiddleValues = function() {
-        this.dragger.switchDragMode(JsSplitter.H);
-        this.dragger.saveCurrentXMiddleValue();
-        this.dragger.switchDragMode(JsSplitter.V);
-        this.dragger.saveCurrentYMiddleValue();
+        if (this.vSplitter) {
+            this.dragger.switchDragMode(JsSplitter.H);
+            this.dragger.saveCurrentXMiddleValue();
+        }
+        if (this.hSplitter) {
+            this.dragger.switchDragMode(JsSplitter.V);
+            this.dragger.saveCurrentYMiddleValue();
+        }
 
         for (var i = 0; i < this._children.length; i++) {
             this._children[i].saveMiddleValues();
