@@ -2,10 +2,26 @@
  * @author denisk
  */
 (function () {
+
+    function getElementsByClassName(className) {
+        var ret = [];
+        var nodes = document.getElementsByTagName("*");
+        for (var i = 0; i < nodes.length; ++i) {
+            var node = nodes[i];
+            if (node.getAttribute("class") == className) {
+                ret.push(node);
+            }
+        }
+        return ret;
+    };
+
     window._ = function(id) {
         var result = document.getElementById(id);
-        if (! result) {
+        if (! result && document.getElementsByClassName) {
             result = document.getElementsByClassName(id)[0];
+        }
+        if (! result) {
+            result = getElementsByClassName(id)[0];
         }
         if (! result) {
             throw "Nothing found for " + id;
@@ -261,6 +277,11 @@
             this.vLimit = options.vLimit;
         } else {
             this.vLimit = JsSplitter.vLimit;
+        }
+        if (options.enableChildrenSwitch) {
+            this.enableChildrenSwitch = options.enableChildrenSwitch;
+        } else {
+            this.enableChildrenSwitch = true;
         }
 
         this._children = [];
@@ -1106,14 +1127,18 @@
 
     };
     JsSplitter.SplittedArea.prototype.draw = function() {
-        this.disableChildren();
-        this.disableSplitters();
+        if (this.enableChildrenSwitch) {
+            this.disableChildren();
+            this.disableSplitters();
+        }
 
         this.drawSectors();
 
         this.drawSplitters();
 
-        this.enableSplitters();
+        if (this.enableChildrenSwitch) {
+            this.enableSplitters();
+        }
     };
     JsSplitter.SplittedArea.prototype.addSubArea = function(sector, /**JsSplitter.SplittedArea*/ childArea) {
         var parent;
@@ -1313,7 +1338,9 @@
 
         for (var i = 0; i < this._children.length; i++) {
             //enable child's base so it's clientWidth and clientHeight get calculated
-            this._children[i].base.style.display = "block";
+            if (this.enableChildrenSwitch) {
+                this._children[i].base.style.display = "block";
+            }
             this._children[i].drawSectors();
         }
     };
