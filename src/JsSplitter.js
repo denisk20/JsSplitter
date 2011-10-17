@@ -582,31 +582,41 @@
             if (vSplitter) {
                 var buttons = document.createElement("div");
                 buttons.style.position = "absolute";
-                buttons.style.top = "10%";
                 buttons.style.width = "100%";
-                buttons.style.height = area.animation.buttonSize + "px";
+                var width = area.animation.splitterWidth;
+                buttons.style.height = "100%";
 
                 var towardsButton = document.createElement("canvas");
                 var oppositeButton = document.createElement("canvas");
+                var equalsButton = document.createElement("canvas");
 
                 towardsButton.style.width = "100%";
-                towardsButton.style.height = "50%";
+                towardsButton.style.height = "48%";
                 towardsButton.style.position = "absolute";
                 towardsButton.style.top = 0;
                 towardsButton.style.backgroundColor = area.animation.towardsButtonColor;
                 towardsButton.name = "towards";
+                
                 oppositeButton.style.width = "100%";
-                oppositeButton.style.height = "50%";
+                oppositeButton.style.height = "48%";
                 oppositeButton.style.position = "absolute";
                 oppositeButton.style.bottom = 0;
                 oppositeButton.style.backgroundColor = area.animation.oppositeButtonColor;
                 oppositeButton.name = "opposite";
+
+                equalsButton.style.width = "100%";
+                equalsButton.style.height = "4%";
+                equalsButton.style.position = "absolute";
+                equalsButton.style.top = "48%";
+                equalsButton.style.bottom = "48%";
+                equalsButton.style.backgroundColor = "white";
 
                 towardsButton.style.cursor = "Pointer";
                 oppositeButton.style.cursor = "Pointer";
 
                 buttons.appendChild(towardsButton);
                 buttons.appendChild(oppositeButton);
+                buttons.appendChild(equalsButton);
 
                 vSplitter.appendChild(buttons);
                 var draggingController = new JsSplitter.HorizontalDraggingController(area.dragger);
@@ -1170,7 +1180,7 @@
 
 
     /**
-     * This method must be called once after all splitting areas, are initialized
+     * This method must be called once after all splitting areas are initialized
      * and nested into each other
      */
     JsSplitter.SplittedArea.prototype.attachBaseListeners = function() {
