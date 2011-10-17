@@ -45,7 +45,11 @@
         animation: {
             disabled: false,
             delay: 10,
+<<<<<<< local
+            step: 7,
+=======
             step: 8,//px
+>>>>>>> other
             buttonSize: 30,
             towardsButtonColor: "red",
             oppositeButtonColor: "orange"
