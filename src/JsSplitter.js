@@ -8,7 +8,7 @@
         var nodes = document.getElementsByTagName("*");
         for (var i = 0; i < nodes.length; ++i) {
             var node = nodes[i];
-            if (node.getAttribute("class") == className) {
+            if (node.getAttribute("class") == className) { 
                 ret.push(node);
             }
         }
