@@ -1,0 +1,86 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title></title>
+    <link rel="stylesheet" href="style.css" type="text/css"/>
+    <script type="text/javascript" src="../src/JsSplitter.js"></script>
+    <script type="text/javascript">
+        //    <![CDATA[
+        JsSplitter.splitterWidth = 6;
+        var outerSplittedArea;
+        window.onresize = function() {
+//            setTimeout(function() {outerSplittedArea.draw()}, 1);
+            outerSplittedArea.draw();
+        };
+
+        function split() {
+            var outerOptions = {
+                w: 0.3,
+                h: 0.5,
+                vSplitterColor: "black",
+                hSplitterColor: "black",
+                splitterWidth: 19,
+                animation: {
+                    disabled: false
+                }
+            };
+            outerSplittedArea = new JsSplitter.SplittedArea(outerOptions,_("parent"), _("nw"), _("ne"), _("se"), _("sw"));
+            var innerOptions = {
+                w:0.7,
+                h:0.6,
+                animation: {
+                    disabled: true
+                },
+                enableChildrenSwitch: false
+            };
+            var innerSplittedArea = new JsSplitter.SplittedArea(innerOptions, _("i_parent"), _("i_nw"), _("i_ne"), _("i_se"), _("i_sw"));
+            var innerOptions1 = {
+                w:0.2,
+                h:0.3,
+//                animation: {
+//                    disabled: true
+//                }
+            };
+            var innerSplittedArea1 = new JsSplitter.SplittedArea(innerOptions1, _("i_i_parent"), _("i_i_nw"), _("i_i_ne"), _("i_i_se"), _("i_i_sw"));
+            var innerOptions2 = {
+                w: 0.6,
+                h:0.4
+            };
+            var innerSplittedArea2 = new JsSplitter.SplittedArea(innerOptions2, _("i_i_i_parent"), _("i_i_i_nw"), _("i_i_i_ne"), _("i_i_i_se"), _("i_i_i_sw"));
+
+            outerSplittedArea.addSubArea(JsSplitter.SplittedArea.SE, innerSplittedArea);
+            innerSplittedArea.addSubArea(JsSplitter.SplittedArea.NW, innerSplittedArea1);
+            innerSplittedArea1.addSubArea(JsSplitter.SplittedArea.NW, innerSplittedArea2);
+
+            outerSplittedArea.build();
+        }
+        //    ]]>
+    </script>
+</head>
+<body onload="split()">
+<div class="parent"></div>
+<div class="nw"></div>
+<div class="ne"></div>
+<div class="se"></div>
+<div class="sw"></div>
+
+<div class="i_parent"></div>
+<div class="i_nw"></div>
+<div class="i_ne"></div>
+<div class="i_se"></div>
+<div class="i_sw"></div>
+
+<div class="i_i_parent"></div>
+<div class="i_i_nw"></div>
+<div class="i_i_ne"></div>
+<div class="i_i_se"></div>
+<div class="i_i_sw"></div>
+
+<div class="i_i_i_parent"></div>
+<div class="i_i_i_nw"></div>
+<div class="i_i_i_ne"></div>
+<div class="i_i_i_se"></div>
+<div class="i_i_i_sw"></div>
+
+</body>
+</html>
