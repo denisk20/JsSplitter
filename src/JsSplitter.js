@@ -8,7 +8,7 @@
         var nodes = document.getElementsByTagName("*");
         for (var i = 0; i < nodes.length; ++i) {
             var node = nodes[i];
-            if (node.getAttribute("class") == className) { 
+            if (node.getAttribute("class") == className) {
                 ret.push(node);
             }
         }
@@ -45,11 +45,7 @@
         animation: {
             disabled: false,
             delay: 10,
-<<<<<<< local
-            step: 7,
-=======
             step: 8,//px
->>>>>>> other
             buttonSize: 30,
             towardsButtonColor: "red",
             oppositeButtonColor: "orange"
