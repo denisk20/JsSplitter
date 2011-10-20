@@ -43,6 +43,7 @@
         hSplitterColor : "#000000",
         hLimit: 10, //px
         vLimit: 10,  //px
+        arrowFadeOutColor: "grey",
         animation: {
             disabled: false,
             delay: 10,
@@ -543,6 +544,7 @@
                 buttons.style.position = "absolute";
                 buttons.style.width = "100%";
                 buttons.style.height = "100%";
+                buttons.style.backgroundColor = "white";
 
                 var towardsButton = document.createElement("canvas");
                 var oppositeButton = document.createElement("canvas");
@@ -563,6 +565,10 @@
 
                 towardsButton.style.cursor = "Pointer";
                 oppositeButton.style.cursor = "Pointer";
+
+                this._addFadeOutEffect(towardsButton, JsSplitter.arrowFadeOutColor);
+                this._addFadeOutEffect(oppositeButton, JsSplitter.arrowFadeOutColor);
+
                 buttons.appendChild(towardsButton);
                 buttons.appendChild(oppositeButton);
                 hSplitter.appendChild(buttons);
@@ -584,6 +590,7 @@
                 buttons.style.position = "absolute";
                 buttons.style.width = "100%";
                 buttons.style.height = "100%";
+                buttons.style.backgroundColor = "white";
 
                 var towardsButton = document.createElement("canvas");
                 var oppositeButton = document.createElement("canvas");
@@ -608,6 +615,9 @@
                 buttons.appendChild(towardsButton);
                 buttons.appendChild(oppositeButton);
 
+                this._addFadeOutEffect(towardsButton, JsSplitter.arrowFadeOutColor);
+                this._addFadeOutEffect(oppositeButton, JsSplitter.arrowFadeOutColor);
+
                 vSplitter.appendChild(buttons);
                 var draggingController = new JsSplitter.HorizontalDraggingController(area.dragger);
                 area.hDragController = draggingController;
@@ -619,6 +629,16 @@
                 area.westArrow = towardsButton;
                 area.eastArrow = oppositeButton;
             }
+        },
+        //todo move this into different file
+        _addFadeOutEffect: function(dom, color) {
+            var originalColor = dom.style.backgroundColor;
+            EventUtil.addHandler(dom, "mouseover", function() {
+                dom.style.backgroundColor = color;
+            });
+            EventUtil.addHandler(dom, "mouseout", function() {
+                dom.style.backgroundColor = originalColor;
+            });
         }
     };
     JsSplitter.SplittedArea.OrdinalSplitterBuilder = {
