@@ -38,6 +38,7 @@
     //global defaults
     window.JsSplitter = {
         splitterWidth : 8, //px
+        arrowWidth : 5, //px
         vSplitterColor : "#000000",
         hSplitterColor : "#000000",
         hLimit: 10, //px
@@ -438,7 +439,6 @@
         this.eventPropertyName = "clientX";
         this.draggerCurrentProperty = "currentX";
     };
-
     JsSplitter.HorizontalDraggingController.prototype.init = function() {
         this.dragger.switchDragMode(this.draggingMode);
         this.startTowardsAmount = (this.dragger.getPixelAmountFromProperty(this.dragger.towardsElements[0], "width"));
@@ -456,7 +456,6 @@
         this.eventPropertyName = "clientY";
         this.draggerCurrentProperty = "currentY";
     };
-
     JsSplitter.VerticalDraggingController.prototype.init = function() {
         this.dragger.switchDragMode(this.draggingMode);
         this.startTowardsAmount = (this.dragger.getPixelAmountFromProperty(this.dragger.towardsElements[0], "height"));
@@ -542,20 +541,20 @@
             if (hSplitter) {
                 var buttons = document.createElement("div");
                 buttons.style.position = "absolute";
-                buttons.style.left = "10%";
-                buttons.style.width = area.animation.buttonSize + "px";
+                buttons.style.width = "100%";
                 buttons.style.height = "100%";
 
                 var towardsButton = document.createElement("canvas");
                 var oppositeButton = document.createElement("canvas");
 
-                towardsButton.style.width = "50%";
+                towardsButton.style.width = "45%";
                 towardsButton.style.height = "100%";
                 towardsButton.style.position = "absolute";
                 towardsButton.style.left = 0;
                 towardsButton.style.backgroundColor = area.animation.towardsButtonColor;
                 towardsButton.name = "towards";
-                oppositeButton.style.width = "50%";
+                
+                oppositeButton.style.width = "45%";
                 oppositeButton.style.height = "100%";
                 oppositeButton.style.position = "absolute";
                 oppositeButton.style.right = 0;
@@ -572,6 +571,7 @@
                 var towardsController = new JsSplitter.TowardsDraggingController(draggingController);
                 var oppositeController = new JsSplitter.OppositeDraggingController(draggingController);
                 draggingController.arrowState = JsSplitter.MiddleArrowState;
+                
                 JsSplitter.DragAnimator.addHandlerToArrow(towardsButton, area.dragger, draggingController, towardsController);
                 JsSplitter.DragAnimator.addHandlerToArrow(oppositeButton, area.dragger, draggingController, oppositeController);
                 area.northArrow = towardsButton;
@@ -583,40 +583,30 @@
                 var buttons = document.createElement("div");
                 buttons.style.position = "absolute";
                 buttons.style.width = "100%";
-                var width = area.animation.splitterWidth;
                 buttons.style.height = "100%";
 
                 var towardsButton = document.createElement("canvas");
                 var oppositeButton = document.createElement("canvas");
-                var equalsButton = document.createElement("canvas");
 
                 towardsButton.style.width = "100%";
-                towardsButton.style.height = "48%";
+                towardsButton.style.height = "45%";
                 towardsButton.style.position = "absolute";
                 towardsButton.style.top = 0;
                 towardsButton.style.backgroundColor = area.animation.towardsButtonColor;
                 towardsButton.name = "towards";
                 
                 oppositeButton.style.width = "100%";
-                oppositeButton.style.height = "48%";
+                oppositeButton.style.height = "45%";
                 oppositeButton.style.position = "absolute";
                 oppositeButton.style.bottom = 0;
                 oppositeButton.style.backgroundColor = area.animation.oppositeButtonColor;
                 oppositeButton.name = "opposite";
-
-                equalsButton.style.width = "100%";
-                equalsButton.style.height = "4%";
-                equalsButton.style.position = "absolute";
-                equalsButton.style.top = "48%";
-                equalsButton.style.bottom = "48%";
-                equalsButton.style.backgroundColor = "white";
 
                 towardsButton.style.cursor = "Pointer";
                 oppositeButton.style.cursor = "Pointer";
 
                 buttons.appendChild(towardsButton);
                 buttons.appendChild(oppositeButton);
-                buttons.appendChild(equalsButton);
 
                 vSplitter.appendChild(buttons);
                 var draggingController = new JsSplitter.HorizontalDraggingController(area.dragger);
@@ -1231,37 +1221,41 @@
         drawNorth: function(/**canvas*/ canvas) {
             if (canvas.getContext) {
                 this._initState(canvas);
-                this.context.moveTo(0, this.height);
+                this.context.moveTo(this.width / 2 - JsSplitter.arrowWidth, this.height);
                 this.context.lineTo(this.width / 2, 0);
-                this.context.lineTo(this.width, this.height);
+                this.context.lineTo(this.width / 2 + JsSplitter.arrowWidth, this.height);
                 this.context.stroke();
+                this.context.fill();
             }
         },
         drawSouth: function(/**canvas*/ canvas) {
             if (canvas.getContext) {
                 this._initState(canvas);
-                this.context.moveTo(0, 0);
+                this.context.moveTo(this.width / 2 - JsSplitter.arrowWidth, 0);
                 this.context.lineTo(this.width / 2, this.height);
-                this.context.lineTo(this.width, 0);
+                this.context.lineTo(this.width / 2 + JsSplitter.arrowWidth, 0);
                 this.context.stroke();
+                this.context.fill();
             }
         },
         drawWest: function(/**canvas*/ canvas) {
             if (canvas.getContext) {
                 this._initState(canvas);
-                this.context.moveTo(this.width, 0);
+                this.context.moveTo(this.width, this.height/2 - JsSplitter.arrowWidth);
                 this.context.lineTo(0, this.height / 2);
-                this.context.lineTo(this.width, this.height);
+                this.context.lineTo(this.width, this.height/2 + JsSplitter.arrowWidth);
                 this.context.stroke();
+                this.context.fill();
             }
         },
         drawEast: function(/**canvas*/ canvas) {
             if (canvas.getContext) {
                 this._initState(canvas);
-                this.context.moveTo(0, 0);
+                this.context.moveTo(0, this.height / 2 - JsSplitter.arrowWidth);
                 this.context.lineTo(this.width, this.height / 2);
-                this.context.lineTo(0, this.height);
+                this.context.lineTo(0, this.height / 2 + JsSplitter.arrowWidth);
                 this.context.stroke();
+                this.context.fill();
             }
         }
     };
